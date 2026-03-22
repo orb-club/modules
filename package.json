@@ -1,0 +1,61 @@
+{
+  "name": "@orb-club/modules",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "check": "bun tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "biome check --write --no-errors-on-unmatched"
+    ],
+    "*.{json,md}": [
+      "biome format --write --no-errors-on-unmatched"
+    ]
+  },
+  "exports": {
+    "./orb-auth": "./orb-auth.ts",
+    "./orb-api": "./orb-api.ts",
+    "./media": "./media.ts",
+    "./grove-upload": "./grove-upload.ts",
+    "./adapters/hono": "./adapters/hono.ts",
+    "./adapters/next": "./adapters/next.ts",
+    "./state/auth": "./state/auth/auth-context.tsx",
+    "./state/qr": "./state/qr/qr-context.tsx",
+    "./state/types": "./state/types.ts"
+  },
+  "peerDependencies": {
+    "hono": ">=4.0.0",
+    "next": ">=14.0.0",
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "hono": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.8",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.0",
+    "hono": "^4.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "next": "^14.2.0",
+    "react": "^19.2.0",
+    "typescript": "^5.5.0"
+  }
+}
