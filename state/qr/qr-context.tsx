@@ -105,15 +105,15 @@ export function QrLoginProvider({
               (tokenPayload?.act as { sub?: string })?.sub ??
               (tokenPayload?.sub as string | undefined);
 
-            const handle = pollData.handle || "user";
-            const formattedHandle = handle.startsWith("@") ? handle : `@${handle}`;
+            const rawHandle = pollData.handle || "user";
+            const handle = rawHandle.startsWith("@") ? rawHandle.slice(1) : rawHandle;
 
             // Extract profile from enriched poll response
             const profile = res.data?.profile;
 
             const newUser: UserSession = {
               accessToken: pollData.accessToken,
-              handle: formattedHandle,
+              handle,
               avatarUrl: profile?.picture ? parseImage(profile.picture) : null,
               displayName: profile?.name ?? undefined,
               account,
@@ -128,7 +128,7 @@ export function QrLoginProvider({
             dispatch({ type: "CLEAR_QR" });
 
             if (account && pollData.accessToken) {
-              onLoginSuccessRef.current?.(account, pollData.accessToken, formattedHandle);
+              onLoginSuccessRef.current?.(account, pollData.accessToken, handle);
             }
           } else if (status === "FAILED") {
             resetForNewSession("Sign-in failed. Generating new QR...");

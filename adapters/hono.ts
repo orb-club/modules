@@ -149,13 +149,29 @@ export function createQrInitRoute(credentials = "id_access", config?: QrRouteCon
   };
 }
 
+export interface QrPollRouteConfig extends QrRouteConfig {
+  /** Fetch user profile on successful login. Default: true. */
+  enrichProfile?: boolean;
+  /** Called server-side after successful QR login. Use for session creation, cookie setting, etc. */
+  onSuccess?: (ctx: {
+    pollData: Record<string, unknown>;
+    profile: {
+      name: string | null;
+      picture: string | null;
+      bio: string | null;
+      coverPicture: string | null;
+      localName: string | null;
+    } | null;
+    c: Context;
+  }) => Promise<void> | void;
+}
+
 /**
  * Create a POST route that polls a QR sign-in session.
- * When `enrichProfile` is true, fetches the user profile from the Orb backend
- * on successful login and attaches it to the response (requires API_BASE_URL
- * and ORB_ACCESS_TOKEN env vars).
+ * Enriches with user profile on success (default). Supports `onSuccess` hook
+ * for server-side session creation.
  */
-export function createQrPollRoute(config?: QrRouteConfig & { enrichProfile?: boolean }) {
+export function createQrPollRoute(config?: QrPollRouteConfig) {
   const qrApi = config?.qrApiUrl ?? process.env.ORB_QR_BASE_URL ?? QR_API_URL;
   return async (c: Context) => {
     try {
@@ -181,20 +197,25 @@ export function createQrPollRoute(config?: QrRouteConfig & { enrichProfile?: boo
       }
       const data = await response.json();
 
-      // Enrich with user profile on successful login
-      if (config?.enrichProfile !== false) {
-        const pollData = (data as Record<string, unknown>)?.data as
-          | Record<string, unknown>
-          | undefined;
-        if (
-          (data as Record<string, unknown>)?.status === "SUCCESS" &&
-          pollData?.processed === true &&
-          pollData?.accessToken
-        ) {
-          const profile = await fetchUserProfile(pollData.accessToken as string);
+      // On successful login: enrich profile + call onSuccess hook
+      const pollData = (data as Record<string, unknown>)?.data as
+        | Record<string, unknown>
+        | undefined;
+      if (
+        (data as Record<string, unknown>)?.status === "SUCCESS" &&
+        pollData?.processed === true &&
+        pollData?.accessToken
+      ) {
+        let profile: Awaited<ReturnType<typeof fetchUserProfile>> = null;
+        if (config?.enrichProfile !== false) {
+          profile = await fetchUserProfile(pollData.accessToken as string);
           if (profile) {
             (data as Record<string, unknown>).profile = profile;
           }
+        }
+
+        if (config?.onSuccess) {
+          await config.onSuccess({ pollData, profile, c });
         }
       }
 
