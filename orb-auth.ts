@@ -314,6 +314,69 @@ export async function verifyCredentials(
 }
 
 // =====================================================================
+// Account lookup (direct Lens GraphQL)
+// =====================================================================
+
+export interface AccountProfile {
+  address: string;
+  name: string | null;
+  picture: string | null;
+  bio: string | null;
+  coverPicture: string | null;
+  localName: string | null;
+}
+
+/**
+ * Fetch a Lens account by address directly from the Lens GraphQL API.
+ * Server-side only — does not go through a proxy route.
+ */
+export async function fetchAccountByAddress(
+  address: string,
+  lensApiUrl?: string,
+): Promise<{ ok: boolean; message: string; data?: AccountProfile }> {
+  const url = lensApiUrl ?? "https://api.lens.xyz/graphql";
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        query: `query Account($request: AccountRequest!) {
+          account(request: $request) {
+            address
+            metadata { name picture bio coverPicture }
+            username { localName }
+          }
+        }`,
+        variables: { request: { address } },
+      }),
+    });
+    const json = (await res.json()) as Record<string, unknown>;
+    const account = (json?.data as Record<string, unknown>)?.account as
+      | Record<string, unknown>
+      | undefined;
+    if (!account) {
+      return { ok: false, message: "Account not found" };
+    }
+    const metadata = account.metadata as Record<string, unknown> | undefined;
+    const username = account.username as Record<string, unknown> | undefined;
+    return {
+      ok: true,
+      message: "Account found",
+      data: {
+        address: account.address as string,
+        name: (metadata?.name as string | null) ?? null,
+        picture: (metadata?.picture as string | null) ?? null,
+        bio: (metadata?.bio as string | null) ?? null,
+        coverPicture: (metadata?.coverPicture as string | null) ?? null,
+        localName: (username?.localName as string | null) ?? null,
+      },
+    };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "Account lookup failed" };
+  }
+}
+
+// =====================================================================
 // Environment status check
 // =====================================================================
 
