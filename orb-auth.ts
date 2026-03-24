@@ -224,6 +224,50 @@ export async function refreshTokens(
 }
 
 /**
+ * Refresh Lens tokens directly against the Lens GraphQL API.
+ * Server-side only — does not go through a proxy route.
+ *
+ * @param refreshToken - Current refresh token
+ * @param lensApiUrl   - Lens GraphQL endpoint (defaults to LENS_API_URL constant)
+ */
+export async function refreshTokensDirect(
+  refreshToken: string,
+  lensApiUrl?: string,
+): Promise<RefreshResult> {
+  const url = lensApiUrl ?? "https://api.lens.xyz/graphql";
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        query: `mutation Refresh($request: RefreshRequest!) { refresh(request: $request) { ... on AuthenticationTokens { __typename accessToken refreshToken idToken } ... on ForbiddenError { __typename reason } } }`,
+        variables: { request: { refreshToken } },
+      }),
+    });
+    const json = (await res.json()) as Record<string, unknown>;
+    const result = (json?.data as Record<string, unknown>)?.refresh as
+      | Record<string, unknown>
+      | undefined;
+
+    if (result?.__typename === "ForbiddenError") {
+      return { ok: false, message: `Forbidden: ${result.reason}`, error: "FORBIDDEN" };
+    }
+    if (result?.accessToken) {
+      return {
+        ok: true,
+        message: "Token refreshed",
+        accessToken: result.accessToken as string,
+        refreshToken: (result.refreshToken as string) ?? refreshToken,
+        idToken: result.idToken as string | undefined,
+      };
+    }
+    return { ok: false, message: "Unexpected response from Lens API" };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "Refresh failed" };
+  }
+}
+
+/**
  * Revoke an authentication session on Lens.
  *
  * Requires server route: POST /api/auth/revoke
