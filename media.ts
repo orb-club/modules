@@ -126,13 +126,18 @@ export interface MediaUrlConfig {
   lensGateway?: string;
 }
 
-const URL_DEFAULTS: Required<MediaUrlConfig> = {
-  mediaGateway: MEDIA_GATEWAY,
-  audioGateway: AUDIO_GATEWAY,
-  ipfsGateway: IPFS_GATEWAY,
-  arweaveGateway: ARWEAVE_GATEWAY,
-  lensGateway: LENS_GATEWAY,
-};
+function getUrlDefaults(): Required<MediaUrlConfig> {
+  const env = typeof process !== "undefined" ? process.env : undefined;
+  return {
+    mediaGateway: env?.ORB_MEDIA_GATEWAY ?? MEDIA_GATEWAY,
+    audioGateway: env?.ORB_AUDIO_GATEWAY ?? AUDIO_GATEWAY,
+    ipfsGateway: env?.ORB_IPFS_GATEWAY ?? IPFS_GATEWAY,
+    arweaveGateway: env?.ORB_ARWEAVE_GATEWAY ?? ARWEAVE_GATEWAY,
+    lensGateway: env?.ORB_LENS_GATEWAY ?? LENS_GATEWAY,
+  };
+}
+
+const URL_DEFAULTS: Required<MediaUrlConfig> = getUrlDefaults();
 
 // =====================================================================
 // parseUrl — low-level protocol resolver
