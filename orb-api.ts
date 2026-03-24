@@ -631,5 +631,5 @@ export function fetchUserAndClubs(
 export function extractPostId(input: string): string {
   const trimmed = input.trim();
   const match = trimmed.match(/(?:https?:\/\/)?(?:www\.)?orb\.club\/p\/([a-zA-Z0-9_-]+)/);
-  return match ? match[1] : trimmed;
+  return match?.[1] ?? trimmed;
 }
