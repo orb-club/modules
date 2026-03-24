@@ -225,7 +225,8 @@ export async function refreshTokens(
 
 /**
  * Refresh Lens tokens directly against the Lens GraphQL API.
- * Server-side only — does not go through a proxy route.
+ * **Server-side only** — throws if called from the browser.
+ * Does not go through a proxy route.
  *
  * @param refreshToken - Current refresh token
  * @param lensApiUrl   - Lens GraphQL endpoint (defaults to LENS_API_URL constant)
@@ -234,6 +235,9 @@ export async function refreshTokensDirect(
   refreshToken: string,
   lensApiUrl?: string,
 ): Promise<RefreshResult> {
+  if (typeof window !== "undefined") {
+    throw new Error("refreshTokensDirect is server-side only. Use refreshTokens() on the client.");
+  }
   const url = lensApiUrl ?? "https://api.lens.xyz/graphql";
   try {
     const res = await fetch(url, {
@@ -334,6 +338,9 @@ export async function fetchAccountByAddress(
   address: string,
   lensApiUrl?: string,
 ): Promise<{ ok: boolean; message: string; data?: AccountProfile }> {
+  if (typeof window !== "undefined") {
+    throw new Error("fetchAccountByAddress is server-side only.");
+  }
   const url = lensApiUrl ?? "https://api.lens.xyz/graphql";
   try {
     const res = await fetch(url, {
