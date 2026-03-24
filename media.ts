@@ -336,6 +336,9 @@ export function transformMediaUrl(
  * Browser-only (requires DOM).
  */
 export function getAudioDuration(file: File): Promise<number | null> {
+  if (typeof Audio === "undefined") {
+    return Promise.resolve(null);
+  }
   return new Promise((resolve) => {
     const audio = new Audio();
     const objectUrl = URL.createObjectURL(file);
