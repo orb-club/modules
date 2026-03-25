@@ -21,6 +21,15 @@
     }
   },
   "files": {
-    "includes": ["**/*.ts", "**/*.tsx", "**/*.json", "**/*.md"]
+    "includes": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "tests/**/*.ts",
+      "tests/**/*.tsx",
+      "*.ts",
+      "*.tsx",
+      "*.json",
+      "*.md"
+    ]
   }
 }
