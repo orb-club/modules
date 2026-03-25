@@ -8,6 +8,7 @@ bun.lock
 .env
 .env.*
 !.env.example
+!.env.sample
 
 # OS files
 .DS_Store
@@ -26,3 +27,12 @@ dist/
 
 # Coverage / test output
 coverage/
+
+# Local planning notes
+docs/superpowers/plans/
+
+# Local certificates
+*.pem
+*.key
+*.p12
+*.crt

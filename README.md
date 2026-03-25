@@ -1,6 +1,13 @@
 # @orb-club/modules
 
-Shared TypeScript modules for the Orb ecosystem — authentication, media handling, API client, and server-side adapters for Hono and Next.js.
+Auth-first, plugin-based TypeScript SDK for apps built on token-based auth, media primitives, uploads, and optional backend transport.
+
+The package surface is intentionally small:
+
+- root export: `createSDK`
+- plugin entrypoints: `auth`, `auth/qr`, `media`, `upload/grove`, `transport/backend`
+- no UI framework state in the core package
+- no hardcoded app or backend defaults in the runtime
 
 ## Install
 
@@ -8,118 +15,95 @@ Shared TypeScript modules for the Orb ecosystem — authentication, media handli
 bun add @orb-club/modules
 ```
 
-## Modules
-
-| Import | What it does |
-|--------|-------------|
-| `@orb-club/modules/orb-auth` | QR login flow + Lens JWT utilities (decode, refresh, revoke, verify) |
-| `@orb-club/modules/orb-api` | Typed client for Orb backend (posts, users, clubs, drafts, widgets, feeds, search) |
-| `@orb-club/modules/media` | Media URL parsing with gateway-aware routing (audio CDN, image thumbnails, video raw) |
-| `@orb-club/modules/grove-upload` | Browser-side file upload to Lens Grove Storage with progress tracking |
-| `@orb-club/modules/adapters/hono` | Hono route handler factories for Orb backend + Lens API proxying |
-| `@orb-club/modules/adapters/next` | Next.js App Router route handler factories (same API surface) |
-| `@orb-club/modules/state/auth` | React `AuthProvider` / `useAuth` — session persistence, auto token refresh |
-| `@orb-club/modules/state/qr` | React `QrLoginProvider` / `useQrLogin` — QR sign-in flow with auto-start |
-
 ## Quick Start
 
-### 1. Set up server routes (Hono example)
-
 ```ts
-import { Hono } from "hono";
-import {
-  createOrbRoute,
-  createQrInitRoute,
-  createQrPollRoute,
-  createAuthRefreshRoute,
-  createAuthRevokeRoute,
-  createEnvStatusRoute,
-} from "@orb-club/modules/adapters/hono";
+import { createSDK } from "@orb-club/modules";
+import { authPlugin } from "@orb-club/modules/auth";
+import { qrAuthPlugin } from "@orb-club/modules/auth/qr";
+import { mediaPlugin } from "@orb-club/modules/media";
 
-const app = new Hono();
+const sdk = createSDK({
+  plugins: [
+    authPlugin({
+      refreshUrl: "/api/auth/refresh",
+      revokeUrl: "/api/auth/revoke",
+    }),
+    qrAuthPlugin({
+      initUrl: "/api/auth/qr/init",
+      pollUrl: "/api/auth/qr/poll",
+      pollIntervalMs: 2_000,
+    }),
+    mediaPlugin({
+      imageGateway: "https://cdn.example.com",
+      audioGateway: "https://audio.example.com",
+    }),
+  ],
+});
 
-app.get("/api/qr/init", createQrInitRoute());
-app.post("/api/qr/poll", createQrPollRoute());
-app.post("/api/auth/refresh", createAuthRefreshRoute());
-app.post("/api/auth/revoke", createAuthRevokeRoute());
-app.get("/api/env-status", createEnvStatusRoute());
-app.post("/api/user", createOrbRoute("MAINNET-QUERIES/get-user"));
-app.post("/api/clubs", createOrbRoute("MAINNET-QUERIES/get-clubs"));
-app.post("/api/create-post", createOrbRoute("MAINNET-MUTATIONS/create-post-tx", {
-  transformRequest: (body) => ({ ...body, task: "CREATE_ITEM", includePreviewData: true }),
-}));
+const nextSession = await sdk.auth.refresh({
+  refreshToken: "refresh-token",
+});
+
+const qrSession = await sdk.auth.connectWithQr({
+  onInit: ({ qrCode }) => {
+    console.log(qrCode);
+  },
+});
+
+const imageUrl = sdk.media.parseImage("lens://asset", 768);
 ```
 
-### 2. Add auth providers (React)
+## Plugins
 
-```tsx
-import { AuthProvider } from "@orb-club/modules/state/auth";
-import { QrLoginProvider } from "@orb-club/modules/state/qr";
+| Import | Purpose | Runtime |
+| --- | --- | --- |
+| `@orb-club/modules/auth` | Session refresh/revoke helpers and token utilities | Browser or server |
+| `@orb-club/modules/auth/qr` | QR auth flow helpers layered onto `sdk.auth` | Browser client plus app-provided QR endpoints |
+| `@orb-club/modules/media` | Media URL parsing and gateway-aware resolution | Browser or server |
+| `@orb-club/modules/upload/grove` | Browser-side Grove upload plugin with progress tracking | Browser only |
+| `@orb-club/modules/transport/backend` | Minimal JSON backend caller with header injection | Trusted browser/server runtime |
 
-function App() {
-  return (
-    <AuthProvider>
-      <QrLoginProvider>
-        <YourApp />
-      </QrLoginProvider>
-    </AuthProvider>
-  );
-}
-```
+## Runtime Boundaries
 
-### 3. Use in components
+- `createSDK` does not auto-register plugins. Import only what you need.
+- The package does not read environment variables directly. Resolve config in your app and pass it into plugin factories.
+- `upload/grove` requires browser upload APIs such as `File`, `FormData`, and `XMLHttpRequest`.
+- `transport/backend` is intended for trusted app infrastructure or explicit proxy routes.
+- Framework adapters and UI state are not part of the v1 core package surface.
 
-```tsx
-import { useAuth } from "@orb-club/modules/state/auth";
-import { useQrLogin } from "@orb-club/modules/state/qr";
+## Suggested App Config
 
-function LoginScreen() {
-  const { activeUser, isLoggedIn } = useAuth();
-  const { state, handleStartQrSignIn } = useQrLogin();
+The library accepts plain config objects. If your app uses environment variables, keep the mapping in your host app. These names work well as a generic convention:
 
-  if (isLoggedIn) return <p>Welcome {activeUser.handle}</p>;
+- `AUTH_REFRESH_URL`
+- `AUTH_REVOKE_URL`
+- `QR_INIT_URL`
+- `QR_POLL_URL`
+- `MEDIA_GATEWAY`
+- `AUDIO_GATEWAY`
+- `GROVE_API_URL`
+- `BACKEND_BASE_URL`
+- `BACKEND_SERVICE_TOKEN`
 
-  return (
-    <div>
-      {state.qrImage && <img src={state.qrImage} alt="Scan to login" />}
-      <p>{state.qrMessage}</p>
-    </div>
-  );
-}
-```
+## Docs
 
-### 4. Media URL parsing
-
-```ts
-import { parseImage, parseAudioUrl, parseVideoUrl, parseMedia } from "@orb-club/modules/media";
-
-parseImage("lens://abc123");        // → https://media.orbapi.xyz/thumbnailDimension768/https://api.grove.storage/abc123
-parseAudioUrl("lens://abc123");     // → https://audio.orb.ac/https://api.grove.storage/abc123
-parseVideoUrl("ipfs://Qm...");     // → https://gw.ipfs-lens.dev/ipfs/Qm...
-parseMedia(url, { type: "audio" }) // gateway-aware routing by media type or MIME string
-```
-
-## Environment Variables
-
-Required server-side:
-
-| Variable | Purpose |
-|----------|---------|
-| `API_BASE_URL` | Orb backend URL |
-| `ORB_ACCESS_TOKEN` | Server-side auth token for Orb backend |
-| `ORB_APP_ORIGIN` | App domain (fallback for QR auth origin header) |
+- [docs/getting-started.md](docs/getting-started.md)
+- [docs/auth.md](docs/auth.md)
+- [docs/configuration.md](docs/configuration.md)
+- [docs/media.md](docs/media.md)
+- [docs/upload-grove.md](docs/upload-grove.md)
+- [docs/transport-backend.md](docs/transport-backend.md)
+- [docs/errors.md](docs/errors.md)
+- `llms.txt` for agent-oriented navigation
 
 ## Development
 
 ```bash
 bun install
-bun run check      # type-check
-bun run lint       # lint + format check (biome)
-bun run lint:fix   # auto-fix
+bun run check
+bun run test
+bun run lint
 ```
 
-Pre-commit hooks enforce type-checking, linting, and [conventional commits](https://www.conventionalcommits.org/).
-
-## License
-
-Private — @orb-club
+Pre-commit hooks run formatting on staged files. Update `README.md`, `llms.txt`, and the relevant files under `docs/` whenever the public API or examples change.

@@ -1,16 +1,22 @@
 {
   "compilerOptions": {
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ESNext"],
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
-    "jsx": "react-jsx"
+    "types": ["node"]
   },
-  "include": ["*.ts", "adapters/*.ts", "state/**/*.ts", "state/**/*.tsx"]
+  "include": [
+    "src/**/*.ts",
+    "commitlint.config.ts",
+    "tsup.config.ts",
+    "vitest.config.ts",
+    "tests/setup.ts"
+  ],
+  "exclude": ["dist"]
 }

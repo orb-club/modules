@@ -1,0 +1,35 @@
+# @orb-club/modules
+
+Purpose: auth-first, plugin-based SDK for token/session flows, QR auth, media parsing, Grove uploads, and optional backend transport.
+
+Read in this order:
+- `README.md`
+- `docs/getting-started.md`
+- `docs/auth.md`
+- `docs/configuration.md`
+- `docs/media.md`
+- `docs/upload-grove.md`
+- `docs/transport-backend.md`
+- `docs/errors.md`
+- `AGENTS.md`
+
+Capability map:
+- root: `createSDK`, core errors, core types
+- `@orb-club/modules/auth`: `authPlugin`, token/session helpers, auth errors
+- `@orb-club/modules/auth/qr`: `qrAuthPlugin`, QR request helpers, QR errors
+- `@orb-club/modules/media`: `mediaPlugin`, media MIME helpers
+- `@orb-club/modules/upload/grove`: `groveUploadPlugin`, Grove upload errors
+- `@orb-club/modules/transport/backend`: `backendTransportPlugin`, backend transport errors
+
+Runtime map:
+- `auth`: browser or server
+- `auth/qr`: browser client flow with app-provided QR endpoints
+- `media`: browser or server
+- `upload/grove`: browser-only
+- `transport/backend`: trusted runtime or app proxy
+
+Rules for agents:
+- Prefer root + subpath imports; do not invent root re-exports for plugins.
+- Do not reintroduce Orb-specific env names, hardcoded URLs, or backend route names.
+- Keep the core framework-agnostic.
+- Update `README.md`, `llms.txt`, and the relevant docs page whenever the public surface changes.
