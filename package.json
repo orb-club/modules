@@ -12,7 +12,10 @@
     "docs/getting-started.md",
     "docs/auth.md",
     "docs/configuration.md",
-    "docs/errors.md"
+    "docs/errors.md",
+    "docs/media.md",
+    "docs/upload-grove.md",
+    "docs/transport-backend.md"
   ],
   "scripts": {
     "build": "tsup",
