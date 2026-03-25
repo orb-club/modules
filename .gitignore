@@ -1,4 +1,5 @@
 node_modules/
+dist/
 bun.lock
 .env
 .env.*
@@ -9,3 +10,4 @@ bun.lock
 *.p12
 *.crt
 .DS_Store
+docs/superpowers/plans/
