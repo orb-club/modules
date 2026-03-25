@@ -1,2 +1,11 @@
 node_modules/
 bun.lock
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.crt
+.DS_Store

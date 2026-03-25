@@ -1,11 +1,10 @@
 /**
  * @module orb-api
  *
- * Typed client for the Orb backend API.
+ * Typed client for application API route proxies.
  *
- * Every function calls a Next.js API route proxy (not the backend directly).
- * Use `modules/orb-proxy.ts` → `createOrbRoute()` to create those routes
- * with a single line each.
+ * Every function calls a local API route proxy rather than the backend
+ * directly.
  *
  * @example
  *   import { createPostTx, getUser, getClubs } from '@/modules/orb-api'
@@ -22,6 +21,8 @@
 export interface OrbApiConfig {
   /** Base URL prefix for API route proxies. Default: '' (same origin). */
   apiBase?: string;
+  /** Base URL used to build public post links. */
+  postBaseUrl?: string;
 }
 
 // =====================================================================
@@ -294,6 +295,12 @@ async function apiPost<T>(path: string, body: unknown, config?: OrbApiConfig): P
   if (!res.ok)
     throw new Error(((json as AnyJson)?.message as string) ?? `Request failed (${res.status})`);
   return json as T;
+}
+
+function buildPostUrl(slug: string, config?: OrbApiConfig): string {
+  const base = config?.postBaseUrl ?? process.env.ORB_POST_BASE_URL;
+  if (!base) return slug;
+  return `${base.replace(/\/$/, "")}/p/${slug}`;
 }
 
 function wrap<T extends { ok: boolean; message: string }>(
@@ -571,7 +578,7 @@ export function setCustomFeed(
   }, "Failed to save custom feed");
 }
 
-/** Get posts in a custom feed. Returns orb.club URLs. */
+/** Get posts in a custom feed. Returns configured post URLs when available. */
 export function getCustomFeed(
   xAccessToken: string,
   feedId: string,
@@ -583,7 +590,7 @@ export function getCustomFeed(
     const posts = items
       .map((i) => (i as AnyJson).slug || ((i as AnyJson).metadata as AnyJson)?.slug)
       .filter(Boolean)
-      .map((slug) => `https://orb.club/p/${slug}`);
+      .map((slug) => buildPostUrl(String(slug), config));
     return { ok: true, message: "Custom feed fetched", data: { posts } };
   }, "Failed to get custom feed");
 }
@@ -627,9 +634,9 @@ export function fetchUserAndClubs(
 // Utilities
 // =====================================================================
 
-/** Extract a post ID from an orb.club URL or raw ID string. */
+/** Extract a post ID from a `/p/<id>` URL or raw ID string. */
 export function extractPostId(input: string): string {
   const trimmed = input.trim();
-  const match = trimmed.match(/(?:https?:\/\/)?(?:www\.)?orb\.club\/p\/([a-zA-Z0-9_-]+)/);
+  const match = trimmed.match(/(?:https?:\/\/)?(?:www\.)?[^/\s]+\/p\/([a-zA-Z0-9_-]+)/);
   return match?.[1] ?? trimmed;
 }

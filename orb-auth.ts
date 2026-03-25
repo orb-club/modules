@@ -1,12 +1,10 @@
 /**
  * @module orb-auth
  *
- * Orb authentication: QR-based login via the Orb mobile app,
- * plus Lens JWT token management (decode, verify, refresh, revoke).
+ * QR-based authentication helpers plus Lens JWT token management.
  *
- * Client-side functions call Next.js API route proxies — they never
- * talk to orbapi.xyz or api.lens.xyz directly from the browser.
- * Use `modules/orb-proxy.ts` to set up the server-side routes.
+ * Client-side functions call local API route proxies rather than external
+ * services directly from the browser.
  *
  * JWT utilities are pure functions with no network calls.
  *
@@ -36,7 +34,9 @@ export function decodeJwt(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
-    const decoded = atob(parts[1]!.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = parts[1];
+    if (!payload) return null;
+    const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
     return JSON.parse(decoded);
   } catch {
     return null;

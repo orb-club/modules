@@ -1,22 +1,13 @@
-// CDN gateways
-export const MEDIA_GATEWAY = "https://media.orbapi.xyz";
-export const AUDIO_GATEWAY = "https://audio.orb.ac";
-
 // Protocol gateways
 export const IPFS_GATEWAY = "gw.ipfs-lens.dev/ipfs/";
 export const ARWEAVE_GATEWAY = "arweave.net/";
 export const LENS_GATEWAY = "api.grove.storage/";
 
-// External APIs
-export const QR_API_URL = "https://orbapi.xyz";
+// Public APIs
 export const LENS_API_URL = "https://api.lens.xyz/graphql";
-export const DEFAULT_ORIGIN = "https://orb.club";
 
 // Lens chain
 export const LENS_CHAIN_ID = 232;
-
-// Deprecated media domain
-export const DEPRECATED_MEDIA_DOMAIN = "media.orb.ac";
 
 // Media defaults
 export const DEFAULT_THUMBNAIL_DIMENSION = 768;
@@ -52,7 +43,7 @@ export const REVOKE_MUTATION = `
 export const POST_BY_TX_QUERY = `query PostByTx($txHash: TxHash!) { post(request: { txHash: $txHash }) { ... on Post { slug } } }`;
 
 // Auth defaults
-export const DEFAULT_STORAGE_KEY = "orb_auth";
+export const DEFAULT_STORAGE_KEY = "app_auth";
 export const DEFAULT_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export const DEFAULT_REFRESH_INTERVAL_MS = 10_000;
 export const DEFAULT_REFRESH_BUFFER_S = 60;

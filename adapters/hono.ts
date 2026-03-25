@@ -1,36 +1,29 @@
 /**
  * @module adapters/hono
  *
- * Hono route handler factories that proxy requests to the Orb backend.
+ * Hono route handler factories for proxying app backend and Lens requests.
  *
  * @example
  *   import { Hono } from 'hono'
  *   import { createOrbRoute, createQrInitRoute, createQrPollRoute } from '@orb-club/modules/adapters/hono'
  *
  *   const app = new Hono()
- *   app.post('/api/user', createOrbRoute('MAINNET-QUERIES/get-user'))
+ *   app.post('/api/user', createOrbRoute('resource/get'))
  *   app.get('/api/qr/init', createQrInitRoute())
  *   app.post('/api/qr/poll', createQrPollRoute())
  */
 
 import type { Context } from "hono";
-import {
-  DEFAULT_ORIGIN,
-  LENS_API_URL,
-  POST_BY_TX_QUERY,
-  QR_API_URL,
-  REFRESH_MUTATION,
-  REVOKE_MUTATION,
-} from "../constants";
+import { LENS_API_URL, POST_BY_TX_QUERY, REFRESH_MUTATION, REVOKE_MUTATION } from "../constants";
 
 // =====================================================================
 // Configuration
 // =====================================================================
 
 export interface OrbProxyConfig {
-  /** Orb backend base URL. Reads from API_BASE_URL env var by default. */
+  /** App backend base URL. Reads from API_BASE_URL env var by default. */
   backendBaseUrl?: string;
-  /** Server-side Orb access token. Reads from ORB_ACCESS_TOKEN env var by default. */
+  /** Server-side backend access token. Reads from ORB_ACCESS_TOKEN env var by default. */
   orbAccessToken?: string;
 }
 
@@ -44,16 +37,15 @@ export interface RouteOptions {
 }
 
 // =====================================================================
-// Orb backend proxy
+// Backend proxy
 // =====================================================================
 
 /**
- * Create a Hono POST route handler that proxies to the Orb backend.
+ * Create a Hono POST route handler that proxies to an app backend.
  *
- * The client sends: `{ xAccessToken, ...params }`
- * The proxy forwards `params` to `API_BASE_URL/<backendPath>` with headers:
- *   - `x-access-token: Bearer <xAccessToken>`
- *   - `orb-access-token: Bearer <ORB_ACCESS_TOKEN>`
+ * The client sends `{ xAccessToken, ...params }`. The handler forwards the
+ * remaining payload to `API_BASE_URL/<backendPath>` and injects the configured
+ * backend authentication headers.
  */
 export function createOrbRoute(backendPath: string, options?: RouteOptions) {
   return async (c: Context) => {
@@ -98,7 +90,7 @@ export function createOrbRoute(backendPath: string, options?: RouteOptions) {
 
       return c.json(data);
     } catch (error) {
-      console.error(`[orb-proxy ${backendPath}]`, error);
+      console.error(`[proxy ${backendPath}]`, error);
       return c.json({ message: error instanceof Error ? error.message : "Proxy error" }, 500);
     }
   };
@@ -114,12 +106,19 @@ export interface QrRouteConfig {
 }
 
 function getOrigin(c: Context): string {
-  return (
-    c.req.header("origin") ??
-    c.req.header("referer")?.replace(/\/$/, "") ??
-    process.env.ORB_APP_ORIGIN ??
-    DEFAULT_ORIGIN
-  );
+  const originHeader = c.req.header("origin");
+  if (originHeader) return originHeader;
+
+  const refererHeader = c.req.header("referer");
+  if (refererHeader) {
+    try {
+      return new URL(refererHeader).origin;
+    } catch {
+      return refererHeader.replace(/\/$/, "");
+    }
+  }
+
+  return process.env.ORB_APP_ORIGIN ?? new URL(c.req.url).origin;
 }
 
 /**
@@ -128,8 +127,11 @@ function getOrigin(c: Context): string {
  * @param credentials - 'id' | 'id_access' | 'id_access_refresh'. Default: 'id_access'
  */
 export function createQrInitRoute(credentials = "id_access", config?: QrRouteConfig) {
-  const qrApi = config?.qrApiUrl ?? process.env.ORB_QR_BASE_URL ?? QR_API_URL;
   return async (c: Context) => {
+    const qrApi = config?.qrApiUrl ?? process.env.ORB_QR_BASE_URL;
+    if (!qrApi) {
+      return c.json({ message: "Server misconfigured: missing ORB_QR_BASE_URL or qrApiUrl" }, 500);
+    }
     try {
       const origin = getOrigin(c);
       const response = await fetch(`${qrApi}/init-sign-in?credentials=${credentials}`, {
@@ -172,8 +174,11 @@ export interface QrPollRouteConfig extends QrRouteConfig {
  * for server-side session creation.
  */
 export function createQrPollRoute(config?: QrPollRouteConfig) {
-  const qrApi = config?.qrApiUrl ?? process.env.ORB_QR_BASE_URL ?? QR_API_URL;
   return async (c: Context) => {
+    const qrApi = config?.qrApiUrl ?? process.env.ORB_QR_BASE_URL;
+    if (!qrApi) {
+      return c.json({ message: "Server misconfigured: missing ORB_QR_BASE_URL or qrApiUrl" }, 500);
+    }
     try {
       const { secret } = await c.req.json();
       if (!secret) {
@@ -197,7 +202,7 @@ export function createQrPollRoute(config?: QrPollRouteConfig) {
       }
       const data = await response.json();
 
-      // On successful login: enrich profile + call onSuccess hook
+      // On successful login, optionally enrich profile and run the hook.
       const pollData = (data as Record<string, unknown>)?.data as
         | Record<string, unknown>
         | undefined;
@@ -426,7 +431,7 @@ export function createEnvStatusRoute() {
   return (c: Context) => {
     return c.json({
       apiBaseConfigured: !!process.env.API_BASE_URL,
-      orbAccessTokenConfigured: !!process.env.ORB_ACCESS_TOKEN,
+      backendAccessTokenConfigured: !!process.env.ORB_ACCESS_TOKEN,
     });
   };
 }

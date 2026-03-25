@@ -3,26 +3,23 @@
  * @module media
  *
  * Media MIME type enums, category detection, and
- * IPFS / Arweave / Lens URI → gateway URL resolution.
+ * IPFS / Arweave / Lens URI to gateway URL resolution.
  *
  * @example
  *   import { parseUrl, parseMedia, parseImage, parseAudioUrl, parseVideoUrl } from '@orb-club/modules/media'
  *
  *   parseUrl('lens://abc123')                          // 'https://api.grove.storage/abc123'
- *   parseMedia('lens://abc123', { type: 'audio' })     // 'https://audio.orb.ac/https://api.grove.storage/abc123'
- *   parseImage('lens://abc123')                        // 'https://media.orbapi.xyz/thumbnailDimension768/https://api.grove.storage/abc123'
- *   parseAudioUrl('lens://abc123')                     // 'https://audio.orb.ac/https://api.grove.storage/abc123'
+ *   parseMedia('lens://abc123', { type: 'audio', config: { audioGateway: 'https://audio.example.com' } })
+ *   parseImage('lens://abc123', 768, { mediaGateway: 'https://cdn.example.com' })
+ *   parseAudioUrl('lens://abc123', { audioGateway: 'https://audio.example.com' })
  *   parseVideoUrl('ipfs://Qm...')                      // 'https://gw.ipfs-lens.dev/ipfs/Qm...'
  */
 
 import {
   ARWEAVE_GATEWAY,
-  AUDIO_GATEWAY,
   DEFAULT_THUMBNAIL_DIMENSION,
-  DEPRECATED_MEDIA_DOMAIN,
   IPFS_GATEWAY,
   LENS_GATEWAY,
-  MEDIA_GATEWAY,
 } from "./constants";
 
 // =====================================================================
@@ -127,18 +124,23 @@ export interface MediaUrlConfig {
   lensGateway?: string;
 }
 
-function getUrlDefaults(): Required<MediaUrlConfig> {
+function getUrlDefaults(): MediaUrlConfig {
   const env = typeof process !== "undefined" ? process.env : undefined;
   return {
-    mediaGateway: env?.ORB_MEDIA_GATEWAY ?? MEDIA_GATEWAY,
-    audioGateway: env?.ORB_AUDIO_GATEWAY ?? AUDIO_GATEWAY,
+    mediaGateway: env?.ORB_MEDIA_GATEWAY,
+    audioGateway: env?.ORB_AUDIO_GATEWAY,
     ipfsGateway: env?.ORB_IPFS_GATEWAY ?? IPFS_GATEWAY,
     arweaveGateway: env?.ORB_ARWEAVE_GATEWAY ?? ARWEAVE_GATEWAY,
     lensGateway: env?.ORB_LENS_GATEWAY ?? LENS_GATEWAY,
   };
 }
 
-const URL_DEFAULTS: Required<MediaUrlConfig> = getUrlDefaults();
+const URL_DEFAULTS = getUrlDefaults();
+
+function withGateway(gateway: string | undefined, path: string): string {
+  if (!gateway) return path;
+  return `${gateway.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+}
 
 // =====================================================================
 // parseUrl — low-level protocol resolver
@@ -154,7 +156,7 @@ const URL_DEFAULTS: Required<MediaUrlConfig> = getUrlDefaults();
 export function parseUrl(url: string | null | undefined, config?: MediaUrlConfig): string | null {
   if (!url) return null;
 
-  const cfg = config ? { ...URL_DEFAULTS, ...config } : URL_DEFAULTS;
+  const cfg = { ...URL_DEFAULTS, ...config };
 
   // Protocol prefixes
   if (url.startsWith("ipfs://")) {
@@ -198,9 +200,9 @@ export interface ParseMediaOptions {
 /**
  * Resolve a media URL through the appropriate CDN gateway.
  *
- * - `image` (default) → thumbnail gateway (`media.orbapi.xyz`)
- * - `audio` → audio CDN (`audio.orb.ac`), unless already on Grove (which has its own CDN)
- * - `video` → raw resolved URL (no CDN wrapping)
+ * - `image` (default) -> thumbnail gateway when configured
+ * - `audio` -> audio gateway when configured
+ * - `video` -> raw resolved URL
  *
  * Accepts either a category string ('audio', 'video', 'image') or a MIME
  * type string ('audio/mpeg', 'video/mp4') which is auto-detected via
@@ -221,13 +223,13 @@ export function parseMedia(
     config,
   } = options ?? {};
 
-  const cfg = config ? { ...URL_DEFAULTS, ...config } : URL_DEFAULTS;
+  const cfg = { ...URL_DEFAULTS, ...config };
 
   // Data URLs pass through
   if (url.startsWith("data:")) return url;
 
-  // Strip existing gateway wrappers to get back to the raw URI
-  // Loop to handle nested wrapping (e.g. audio.orb.ac/audio.orb.ac/...)
+  // Strip existing gateway wrappers to get back to the raw URI.
+  // Loop to handle nested wrapping without depending on specific hostnames.
   let stripped = url;
   let changed = true;
   while (changed) {
@@ -238,18 +240,10 @@ export function parseMedia(
       changed = true;
     }
 
-    const audioMatch = stripped.match(/audio\.orb\.ac\/(.*)/);
-    if (audioMatch?.[1]) {
-      stripped = audioMatch[1];
+    const nestedHttpMatch = stripped.match(/^https?:\/\/[^/]+\/(https?:\/\/.*)$/);
+    if (nestedHttpMatch?.[1]) {
+      stripped = nestedHttpMatch[1];
       changed = true;
-    }
-
-    if (stripped.includes(DEPRECATED_MEDIA_DOMAIN)) {
-      const next = stripped.replace(/https?:\/\/media\.orb\.ac/g, cfg.mediaGateway);
-      if (next !== stripped) {
-        stripped = next;
-        changed = true;
-      }
     }
   }
 
@@ -271,12 +265,14 @@ export function parseMedia(
 
   switch (category) {
     case "audio":
-      return `${cfg.audioGateway}/${resolved}`;
+      return withGateway(cfg.audioGateway, resolved);
     case "video":
       return resolved;
     default:
       if (resolved.endsWith(".svg")) return resolved;
-      return `${cfg.mediaGateway}/thumbnailDimension${dimension}/${resolved}`;
+      return cfg.mediaGateway
+        ? withGateway(cfg.mediaGateway, `thumbnailDimension${dimension}/${resolved}`)
+        : resolved;
   }
 }
 
