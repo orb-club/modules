@@ -44,7 +44,7 @@ function resolveCategory(type: MediaParseOptions["type"]): Exclude<MediaCategory
   return detected === "unknown" ? "image" : detected;
 }
 
-function stripWrapping(url: string, config: MediaPluginConfig): string {
+function stripWrapping(url: string): string {
   let current = url;
   let changed = true;
 
@@ -84,7 +84,7 @@ function createMediaCapabilities(config: MediaPluginConfig = {}): MediaCapabilit
 
     const { dimension = defaultThumbnailDimension, raw = false } = options ?? {};
     const category = resolveCategory(options?.type);
-    const resolved = parseUrl(stripWrapping(url, config), config);
+    const resolved = parseUrl(stripWrapping(url), config);
 
     if (!resolved || raw || category === "video" || shouldBypassGateway(resolved)) {
       return resolved;

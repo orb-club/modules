@@ -10,7 +10,7 @@ export default defineConfig({
     "transport/backend/index": "src/transport/backend/index.ts",
   },
   format: ["esm", "cjs"],
-  bundle: false,
+  bundle: true,
   clean: true,
   dts: true,
   sourcemap: true,
