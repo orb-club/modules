@@ -43,7 +43,7 @@ const sdk = createSDK({
 });
 
 const session = await sdk.auth.refresh({
-  refreshToken: "refresh-token",
+  refreshToken: currentSession.refreshToken,
 });
 ```
 
@@ -95,15 +95,15 @@ const sdk = createSDK({
 
 const session = await sdk.auth.connectWithQr({
   onInit: ({ qrCode, deepLink }) => {
-    console.log(qrCode, deepLink);
+    renderQrSignIn({ qrCode, deepLink });
   },
 });
 ```
 
-`connectWithQr(...)` resolves when polling returns `processed: true` with an
-`accessToken`. `idToken`, `refreshToken`, and `authenticationId` are preserved
-when the provider returns them, but they are not required for a successful QR
-sign-in result.
+`connectWithQr(...)` resolves when polling returns `processed: true` with a
+non-empty `accessToken`. `idToken`, `refreshToken`, and `authenticationId` are
+preserved when the provider returns them, but they are not required for a
+successful QR sign-in result.
 
 ## `lensAuthPlugin`
 
@@ -127,6 +127,9 @@ Capabilities added to `sdk.auth`:
 - `syncLensSession(session, options?)`
 - `getLensAccountFromAccessToken(token)`
 
+`refreshLensSession(...)` requires a non-empty `refreshToken` and a Lens
+`AuthenticationTokens` response with a non-empty `accessToken`.
+
 `syncLensSession(...)` keeps fresh sessions unchanged, refreshes sessions inside
 the refresh window, returns `null` for Lens `ForbiddenError` responses, and
 keeps the hydrated session on transient refresh failures.
@@ -147,8 +150,8 @@ const sdk = createSDK({
 });
 
 const session = await sdk.auth.syncLensSession({
-  accessToken: "access-token",
-  refreshToken: "refresh-token",
+  accessToken: currentLensSession.accessToken,
+  refreshToken: currentLensSession.refreshToken,
 });
 ```
 

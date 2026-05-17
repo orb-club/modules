@@ -37,9 +37,7 @@ const sdk = createSDK({
 const result = await sdk.upload.uploadFile({
   file,
   account: "0x1234",
-  onProgress: (progress) => {
-    console.log(progress);
-  },
+  onProgress: updateUploadProgress,
 });
 ```
 

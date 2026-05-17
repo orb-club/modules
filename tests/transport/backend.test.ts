@@ -218,6 +218,19 @@ describe("backendTransportPlugin", () => {
     );
   });
 
+  test("throws a typed config error when paths escape the configured base URL path", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>();
+    const sdk = createSDK({
+      fetch,
+      plugins: [backendTransportPlugin({ baseUrl: "https://api.example.com/v1/" })],
+    });
+
+    await expect(sdk.transport.call("../admin", {})).rejects.toBeInstanceOf(
+      BackendTransportConfigError,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   test("throws typed request errors for unserializable payloads", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>();
     const sdk = createSDK({

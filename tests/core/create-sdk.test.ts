@@ -140,4 +140,37 @@ describe("createSDK", () => {
       vi.useRealTimers();
     }
   });
+
+  test("removes upstream abort listeners when timeout handles are cancelled", () => {
+    vi.useFakeTimers();
+
+    try {
+      const upstreamController = new AbortController();
+      const addEventListener = vi.spyOn(upstreamController.signal, "addEventListener");
+      const removeEventListener = vi.spyOn(upstreamController.signal, "removeEventListener");
+      const sdk = createSDK({
+        plugins: [
+          {
+            name: "signals",
+            namespace: "signals",
+            setup: (context) => ({
+              timeoutHandle: context.createTimeoutSignal(100, upstreamController.signal),
+            }),
+          },
+        ],
+      });
+
+      sdk.signals.timeoutHandle.cancel();
+
+      expect(addEventListener).toHaveBeenCalledWith("abort", expect.any(Function), {
+        once: true,
+      });
+      expect(removeEventListener).toHaveBeenCalledWith(
+        "abort",
+        addEventListener.mock.calls[0]?.[1],
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

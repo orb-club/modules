@@ -34,6 +34,7 @@ Normalization behavior:
 - Storage URIs embedded inside wrapper URLs are resolved from the embedded URI.
 - Existing `thumbnailDimension...` proxy prefixes are stripped before gateway wrapping, so callers can change dimensions without double-wrapping.
 - `data:`, `blob:`, and `file:` URLs are preserved.
+- `javascript:` and `vbscript:` URLs return `null`.
 - Bare paths without a recognized URI scheme are returned unchanged.
 
 Example:

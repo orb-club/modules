@@ -403,6 +403,30 @@ describe("qrAuthPlugin", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  test("throws a response error when a custom parser returns an empty access token", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json({}));
+    const sdk = createSDK({
+      fetch,
+      plugins: [
+        authPlugin({ refreshUrl: "/refresh", revokeUrl: "/revoke" }),
+        qrAuthPlugin({
+          parseInitResponse: () => ({
+            qrCode: "qr-code",
+            secret: "secret-123",
+            raw: {},
+          }),
+          parsePollResponse: () => ({
+            processed: true,
+            accessToken: "",
+            raw: {},
+          }),
+        }),
+      ],
+    });
+
+    await expect(sdk.auth.connectWithQr()).rejects.toBeInstanceOf(QrResponseError);
+  });
+
   test("uses SDK default timeouts when QR-specific overrides are absent", async () => {
     vi.useFakeTimers();
 

@@ -5,7 +5,7 @@ Auth-first, plugin-based TypeScript SDK for apps built on token-based auth, medi
 The package surface is intentionally small:
 
 - root export: `createSDK`
-- plugin entrypoints: `auth`, `auth/qr`, `media`, `upload/grove`, `transport/backend`
+- plugin entrypoints: `auth`, `auth/qr`, `auth/lens`, `media`, `upload/grove`, `transport/backend`
 - no UI framework state in the core package
 - no hardcoded app or backend defaults in the runtime
 
@@ -46,20 +46,20 @@ const sdk = createSDK({
 });
 
 const nextSession = await sdk.auth.refresh({
-  refreshToken: "refresh-token",
+  refreshToken: currentSession.refreshToken,
 });
 
 const lensSession = await sdk.auth.refreshLensSession({
-  refreshToken: "refresh-token",
+  refreshToken: currentLensSession.refreshToken,
 });
 
 const qrSession = await sdk.auth.connectWithQr({
-  onInit: ({ qrCode }) => {
-    console.log(qrCode);
+  onInit: ({ qrCode, deepLink }) => {
+    renderQrSignIn({ qrCode, deepLink });
   },
 });
 
-console.log(qrSession.accessToken);
+await persistSession(qrSession);
 
 const imageUrl = sdk.media.parseImage("lens://asset", 768);
 ```

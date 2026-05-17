@@ -1,7 +1,7 @@
 import type { SDKContext } from "../../core/types";
 import { shouldRefreshSession } from "../session";
 import { decodeToken, isTokenExpired } from "../token";
-import { AuthRequestError } from "../types";
+import { AuthRequestError, AuthSessionError } from "../types";
 import type {
   LensAuthPluginConfig,
   LensRefreshSessionInput,
@@ -15,6 +15,10 @@ type JsonObject = Record<string, unknown>;
 
 function isRecord(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
 }
 
 function getGraphQLErrorMessage(payload: unknown): string | null {
@@ -59,6 +63,10 @@ export async function refreshLensSession(
   input: LensRefreshSessionInput,
   options?: LensSyncSessionOptions,
 ): Promise<LensRefreshSessionResult> {
+  if (!input.refreshToken) {
+    throw new AuthSessionError("A refreshToken is required to refresh a Lens session.", "refresh");
+  }
+
   const timeout = context.createTimeoutSignal(
     options?.timeoutMs ?? config.timeoutMs,
     options?.signal,
@@ -120,7 +128,7 @@ export async function refreshLensSession(
       );
     }
 
-    if (result?.__typename !== "AuthenticationTokens" || typeof result.accessToken !== "string") {
+    if (result?.__typename !== "AuthenticationTokens" || !isNonEmptyString(result.accessToken)) {
       throw new AuthRequestError(
         "Lens refresh response did not include an access token",
         "refresh",

@@ -141,6 +141,16 @@ describe("media url resolution", () => {
     ).toBe("data:image/png;base64,abc");
   });
 
+  test("rejects scriptable media url schemes", () => {
+    const sdk = createSDK({
+      plugins: [mediaPlugin()],
+    });
+
+    expect(parseUrl("javascript:alert(1)")).toBeNull();
+    expect(parseUrl("vbscript:msgbox(1)")).toBeNull();
+    expect(sdk.media.parseImage("javascript:alert(1)")).toBeNull();
+  });
+
   test("detects media mime categories", () => {
     expect(sdkCategory("audio/mpeg")).toBe("audio");
     expect(sdkCategory("video/mp4")).toBe("video");

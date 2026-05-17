@@ -72,16 +72,29 @@ export function createTimeoutSignal(timeoutMs?: number, signal?: AbortSignal): T
   }
 
   const controller = new AbortController();
-  const mergedSignal = mergeAbortSignals(signal, controller.signal);
   const timer = globalThis.setTimeout(() => {
+    cleanup();
     controller.abort(new DOMException("The operation timed out.", "TimeoutError"));
   }, timeoutMs);
+  const abortFromSignal = () => {
+    cleanup();
+    controller.abort(signal?.reason);
+  };
+  const cleanup = () => {
+    globalThis.clearTimeout(timer);
+    signal?.removeEventListener("abort", abortFromSignal);
+  };
+
+  if (signal?.aborted) {
+    cleanup();
+    controller.abort(signal.reason);
+  } else {
+    signal?.addEventListener("abort", abortFromSignal, { once: true });
+  }
 
   return {
-    cancel: () => {
-      globalThis.clearTimeout(timer);
-    },
-    signal: mergedSignal,
+    cancel: cleanup,
+    signal: controller.signal,
     timeoutMs,
   };
 }

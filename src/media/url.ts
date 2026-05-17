@@ -47,6 +47,10 @@ function normalizeDataUrl(url: string): string | null {
   return null;
 }
 
+function isUnsafeUrlScheme(url: string): boolean {
+  return /^(?:javascript|vbscript):/i.test(url);
+}
+
 function resolveGatewayConfig(config?: MediaPluginConfig) {
   return {
     ipfsGateway: config?.ipfsGateway ?? DEFAULT_IPFS_GATEWAY,
@@ -62,6 +66,8 @@ export function parseUrl(
   if (!url) return null;
 
   const cleanUrl = stripThumbnailPrefix(url);
+  if (isUnsafeUrlScheme(cleanUrl)) return null;
+
   const dataUrl = normalizeDataUrl(cleanUrl);
   if (dataUrl) return dataUrl;
 

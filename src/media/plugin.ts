@@ -35,6 +35,10 @@ function shouldBypassGateway(url: string): boolean {
   return false;
 }
 
+function isUnsafeUrlScheme(url: string): boolean {
+  return /^(?:javascript|vbscript):/i.test(url);
+}
+
 function resolveCategory(type: MediaParseOptions["type"]): Exclude<MediaCategory, "unknown"> {
   if (type === "audio" || type === "video" || type === "image") {
     return type;
@@ -80,6 +84,7 @@ function createMediaCapabilities(config: MediaPluginConfig = {}): MediaCapabilit
 
   const parse: MediaCapabilities["parse"] = (url, options) => {
     if (!url) return null;
+    if (isUnsafeUrlScheme(url)) return null;
     if (shouldBypassGateway(url)) return url;
 
     const { dimension = defaultThumbnailDimension, raw = false } = options ?? {};

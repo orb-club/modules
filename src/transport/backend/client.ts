@@ -54,7 +54,16 @@ function resolveUrl(baseUrl: string, path: string): string {
     );
   }
 
-  return new URL(normalizedPath.replace(/^\/+/, ""), baseUrl).toString();
+  const base = new URL(baseUrl);
+  const url = new URL(normalizedPath.replace(/^\/+/, ""), base);
+
+  if (!url.pathname.startsWith(base.pathname)) {
+    throw new BackendTransportConfigError(
+      "transport.call(path) cannot escape the configured baseUrl path.",
+    );
+  }
+
+  return url.toString();
 }
 
 function assertHeaderName(header: string, fieldName: string): string {

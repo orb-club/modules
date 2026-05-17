@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { authPlugin } from "../../src/auth";
+import { AuthRequestError, AuthSessionError, authPlugin } from "../../src/auth";
 import { LensAuthForbiddenError, lensAuthPlugin } from "../../src/auth/lens";
 import { createSDK } from "../../src/index";
 
@@ -150,6 +150,47 @@ describe("lensAuthPlugin", () => {
       LensAuthForbiddenError,
     );
     await expect(sdk.auth.syncLensSession({ refreshToken: "refresh-123" })).resolves.toBeNull();
+  });
+
+  test("rejects empty direct Lens refresh tokens before sending requests", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>();
+    const sdk = createSDK({
+      fetch,
+      plugins: [
+        authPlugin({ refreshUrl: "/refresh", revokeUrl: "/revoke" }),
+        lensAuthPlugin({ graphqlUrl: "https://api.lens.xyz/graphql" }),
+      ],
+    });
+
+    await expect(sdk.auth.refreshLensSession({ refreshToken: "" })).rejects.toBeInstanceOf(
+      AuthSessionError,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test("rejects Lens refresh success responses with empty access tokens", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      Response.json({
+        data: {
+          refresh: {
+            __typename: "AuthenticationTokens",
+            accessToken: "",
+            refreshToken: "refresh-456",
+          },
+        },
+      }),
+    );
+    const sdk = createSDK({
+      fetch,
+      plugins: [
+        authPlugin({ refreshUrl: "/refresh", revokeUrl: "/revoke" }),
+        lensAuthPlugin({ graphqlUrl: "https://api.lens.xyz/graphql" }),
+      ],
+    });
+
+    await expect(sdk.auth.refreshLensSession({ refreshToken: "refresh-123" })).rejects.toThrow(
+      AuthRequestError,
+    );
   });
 
   test("keeps the hydrated session on transient refresh failures", async () => {
