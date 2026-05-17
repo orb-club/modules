@@ -403,7 +403,7 @@ describe("qrAuthPlugin", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
-  test("throws a response error when a custom parser returns an empty access token", async () => {
+  test("throws a response error when a custom parser returns a blank access token", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json({}));
     const sdk = createSDK({
       fetch,
@@ -417,7 +417,7 @@ describe("qrAuthPlugin", () => {
           }),
           parsePollResponse: () => ({
             processed: true,
-            accessToken: "",
+            accessToken: "   ",
             raw: {},
           }),
         }),

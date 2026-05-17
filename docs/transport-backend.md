@@ -49,7 +49,9 @@ const result = await sdk.transport.call(
 
 Notes:
 
+- `baseUrl` must use `http` or `https`
 - `path` must be relative to the configured `baseUrl`
 - `path` cannot escape the configured `baseUrl` path with dot segments
+- header names and values are validated before a request is sent
 - non-2xx responses throw `BackendTransportRequestError`
 - invalid transport config throws `BackendTransportConfigError`

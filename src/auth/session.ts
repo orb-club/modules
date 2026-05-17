@@ -25,6 +25,10 @@ function resolveTimestampMs(value: SessionTimestampMs | undefined): number | nul
   return null;
 }
 
+function isNonBlankString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export function getSessionExpiry(session: AuthSession): Date | null {
   if (!session.accessToken) {
     return null;
@@ -62,7 +66,7 @@ export async function refreshSession(
   session: RefreshSessionInput,
   options?: AuthRequestOptions,
 ): Promise<RefreshSessionResult> {
-  if (!session.refreshToken) {
+  if (!isNonBlankString(session.refreshToken)) {
     throw new AuthSessionError("A refreshToken is required to refresh a session.", "refresh");
   }
 
@@ -78,7 +82,7 @@ export async function refreshSession(
     options,
   );
 
-  if (typeof result.accessToken !== "string" || result.accessToken.length === 0) {
+  if (!isNonBlankString(result.accessToken)) {
     throw new AuthRequestError("refresh response did not include an accessToken", "refresh");
   }
 
@@ -91,11 +95,11 @@ export async function revokeSession(
   session: RevokeSessionInput,
   options?: AuthRequestOptions,
 ): Promise<RevokeSessionResult> {
-  if (!session.authenticationId) {
+  if (!isNonBlankString(session.authenticationId)) {
     throw new AuthSessionError("An authenticationId is required to revoke a session.", "revoke");
   }
 
-  if (!session.accessToken) {
+  if (!isNonBlankString(session.accessToken)) {
     throw new AuthSessionError("An accessToken is required to revoke a session.", "revoke");
   }
 

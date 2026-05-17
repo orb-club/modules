@@ -130,8 +130,8 @@ function normalizeStageError(stage: "init" | "poll", error: unknown): never {
   throw new QrRequestError(stage, `QR ${stage} request failed.`, { cause: error });
 }
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
+function isNonBlankString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 async function fetchJson(
@@ -177,7 +177,7 @@ async function fetchJson(
 }
 
 function isSuccessfulPollResponse(payload: ParsedQrPollResponse): payload is QrConnectResult {
-  return payload.processed === true && isNonEmptyString(payload.accessToken);
+  return payload.processed === true && isNonBlankString(payload.accessToken);
 }
 
 function isTerminalPollResponse(payload: ParsedQrPollResponse): boolean {

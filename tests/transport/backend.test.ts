@@ -207,6 +207,54 @@ describe("backendTransportPlugin", () => {
     );
   });
 
+  test("throws a typed config error for non-http backend base URLs", async () => {
+    const sdk = createSDK({
+      fetch: vi.fn<typeof globalThis.fetch>(),
+      plugins: [backendTransportPlugin({ baseUrl: "ftp://api.example.com" })],
+    });
+
+    await expect(sdk.transport.call("/posts", { content: "gm" })).rejects.toBeInstanceOf(
+      BackendTransportConfigError,
+    );
+  });
+
+  test("throws a typed config error for invalid backend header names and values", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>();
+    const sdk = createSDK({
+      fetch,
+      plugins: [
+        backendTransportPlugin({
+          baseUrl: "https://api.example.com",
+          headers: {
+            "bad header": "value",
+          },
+        }),
+      ],
+    });
+
+    await expect(sdk.transport.call("/posts", { content: "gm" })).rejects.toBeInstanceOf(
+      BackendTransportConfigError,
+    );
+
+    const valueSdk = createSDK({
+      fetch,
+      plugins: [
+        backendTransportPlugin({
+          baseUrl: "https://api.example.com",
+          serviceCredential: {
+            header: "x-service-token",
+            value: "secret\nnext",
+          },
+        }),
+      ],
+    });
+
+    await expect(valueSdk.transport.call("/posts", { content: "gm" })).rejects.toBeInstanceOf(
+      BackendTransportConfigError,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   test("throws a typed config error for non-relative paths", async () => {
     const sdk = createSDK({
       fetch: vi.fn<typeof globalThis.fetch>(),

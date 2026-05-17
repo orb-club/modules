@@ -31,13 +31,13 @@ Runtime map:
 - `transport/backend`: trusted runtime or app proxy
 
 Auth QR behavior:
-- `connectWithQr(...)` resolves on `processed: true` plus a non-empty `accessToken`
+- `connectWithQr(...)` resolves on `processed: true` plus a non-blank `accessToken`
 - `idToken`, `refreshToken`, and `authenticationId` are optional result fields
 - `status: SUCCESS` without `processed: true` is not terminal; continue polling
 
 Lens auth behavior:
-- `refreshLensSession(...)` requires a non-empty `refreshToken`
-- Lens refresh success requires `AuthenticationTokens` with a non-empty `accessToken`
+- `refreshLensSession(...)` requires a non-blank `refreshToken`
+- Lens refresh success requires `AuthenticationTokens` with a non-blank `accessToken`
 - `syncLensSession(...)` returns `null` for Lens `ForbiddenError` responses and keeps the hydrated session on transient failures
 
 Media normalization:
@@ -47,8 +47,10 @@ Media normalization:
 - returns `null` for `javascript:` and `vbscript:` URLs
 
 Backend transport behavior:
+- `baseUrl` must use `http` or `https`
 - `transport.call(path, ...)` only accepts paths relative to `baseUrl`
 - paths cannot escape the configured `baseUrl` path with dot segments
+- header names and values are validated before a request is sent
 
 Rules for agents:
 - Prefer root + subpath imports; do not invent root re-exports for plugins.

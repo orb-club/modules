@@ -8,6 +8,7 @@ import type {
 const DEFAULT_ACCESS_TOKEN_HEADER = "authorization";
 const DEFAULT_METHOD = "POST";
 const ABSOLUTE_OR_SCHEME_PATH_PATTERN = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 
 function getErrorMessage(payload: unknown, fallback: string): string {
   if (payload && typeof payload === "object" && "message" in payload) {
@@ -33,8 +34,20 @@ function normalizeBaseUrl(baseUrl: string): string {
   }
 
   try {
-    return new URL(normalized.endsWith("/") ? normalized : `${normalized}/`).toString();
+    const url = new URL(normalized.endsWith("/") ? normalized : `${normalized}/`);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new BackendTransportConfigError(
+        "backendTransportPlugin baseUrl must use http or https.",
+      );
+    }
+
+    return url.toString();
   } catch (error) {
+    if (error instanceof BackendTransportConfigError) {
+      throw error;
+    }
+
     throw new BackendTransportConfigError("backendTransportPlugin baseUrl must be a valid URL.", {
       cause: error,
     });
@@ -73,7 +86,19 @@ function assertHeaderName(header: string, fieldName: string): string {
     throw new BackendTransportConfigError(`${fieldName} must be a non-empty header name.`);
   }
 
+  if (!HTTP_HEADER_NAME_PATTERN.test(normalized)) {
+    throw new BackendTransportConfigError(`${fieldName} must be a valid HTTP header name.`);
+  }
+
   return normalized;
+}
+
+function assertHeaderValue(value: string, fieldName: string): string {
+  if (/[\r\n\0]/.test(value)) {
+    throw new BackendTransportConfigError(`${fieldName} must be a valid HTTP header value.`);
+  }
+
+  return value;
 }
 
 function setHeader(
@@ -82,7 +107,7 @@ function setHeader(
   value: string,
   fieldName: string,
 ): void {
-  headers[assertHeaderName(header, fieldName).toLowerCase()] = value;
+  headers[assertHeaderName(header, fieldName).toLowerCase()] = assertHeaderValue(value, fieldName);
 }
 
 function buildHeaders(

@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import {
   type AuthRequestError,
+  AuthSessionError,
   authPlugin,
   getSessionExpiry,
   isSessionStale,
@@ -128,6 +129,58 @@ describe("authPlugin", () => {
     );
   });
 
+  test("refresh rejects blank refresh tokens before sending requests", async () => {
+    const fetch = vi.fn();
+    const auth = authPlugin({
+      refreshUrl: "/refresh",
+      revokeUrl: "/revoke",
+    }).setup({
+      fetch,
+      logger: {},
+      runtime: "browser",
+      defaults: undefined,
+      createTimeoutSignal: () => ({
+        cancel: () => undefined,
+        signal: undefined,
+        timeoutMs: undefined,
+      }),
+      mergeAbortSignals: () => undefined,
+    });
+
+    await expect(auth.refresh({ refreshToken: "   " })).rejects.toBeInstanceOf(AuthSessionError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test("refresh rejects blank access tokens in successful responses", async () => {
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        accessToken: "   ",
+      }),
+    });
+    const auth = authPlugin({
+      refreshUrl: "/refresh",
+      revokeUrl: "/revoke",
+    }).setup({
+      fetch,
+      logger: {},
+      runtime: "browser",
+      defaults: undefined,
+      createTimeoutSignal: () => ({
+        cancel: () => undefined,
+        signal: undefined,
+        timeoutMs: undefined,
+      }),
+      mergeAbortSignals: () => undefined,
+    });
+
+    await expect(auth.refresh({ refreshToken: "refresh-token" })).rejects.toMatchObject({
+      name: "AuthRequestError",
+      operation: "refresh",
+    });
+  });
+
   test("revoke posts the session identifiers", async () => {
     const fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -177,6 +230,33 @@ describe("authPlugin", () => {
         }),
       }),
     );
+  });
+
+  test("revoke rejects blank identifiers before sending requests", async () => {
+    const fetch = vi.fn();
+    const auth = authPlugin({
+      refreshUrl: "/refresh",
+      revokeUrl: "/revoke",
+    }).setup({
+      fetch,
+      logger: {},
+      runtime: "browser",
+      defaults: undefined,
+      createTimeoutSignal: () => ({
+        cancel: () => undefined,
+        signal: undefined,
+        timeoutMs: undefined,
+      }),
+      mergeAbortSignals: () => undefined,
+    });
+
+    await expect(
+      auth.revoke({ authenticationId: "   ", accessToken: "access-token" }),
+    ).rejects.toBeInstanceOf(AuthSessionError);
+    await expect(
+      auth.revoke({ authenticationId: "auth-1", accessToken: "   " }),
+    ).rejects.toBeInstanceOf(AuthSessionError);
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test("refresh throws a typed error when the response is not successful", async () => {

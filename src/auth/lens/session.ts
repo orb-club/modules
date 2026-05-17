@@ -17,8 +17,8 @@ function isRecord(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
+function isNonBlankString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function getGraphQLErrorMessage(payload: unknown): string | null {
@@ -63,7 +63,7 @@ export async function refreshLensSession(
   input: LensRefreshSessionInput,
   options?: LensSyncSessionOptions,
 ): Promise<LensRefreshSessionResult> {
-  if (!input.refreshToken) {
+  if (!isNonBlankString(input.refreshToken)) {
     throw new AuthSessionError("A refreshToken is required to refresh a Lens session.", "refresh");
   }
 
@@ -128,7 +128,7 @@ export async function refreshLensSession(
       );
     }
 
-    if (result?.__typename !== "AuthenticationTokens" || !isNonEmptyString(result.accessToken)) {
+    if (result?.__typename !== "AuthenticationTokens" || !isNonBlankString(result.accessToken)) {
       throw new AuthRequestError(
         "Lens refresh response did not include an access token",
         "refresh",

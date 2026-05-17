@@ -152,7 +152,7 @@ describe("lensAuthPlugin", () => {
     await expect(sdk.auth.syncLensSession({ refreshToken: "refresh-123" })).resolves.toBeNull();
   });
 
-  test("rejects empty direct Lens refresh tokens before sending requests", async () => {
+  test("rejects blank direct Lens refresh tokens before sending requests", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>();
     const sdk = createSDK({
       fetch,
@@ -162,19 +162,19 @@ describe("lensAuthPlugin", () => {
       ],
     });
 
-    await expect(sdk.auth.refreshLensSession({ refreshToken: "" })).rejects.toBeInstanceOf(
+    await expect(sdk.auth.refreshLensSession({ refreshToken: "   " })).rejects.toBeInstanceOf(
       AuthSessionError,
     );
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  test("rejects Lens refresh success responses with empty access tokens", async () => {
+  test("rejects Lens refresh success responses with blank access tokens", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () =>
       Response.json({
         data: {
           refresh: {
             __typename: "AuthenticationTokens",
-            accessToken: "",
+            accessToken: "   ",
             refreshToken: "refresh-456",
           },
         },
