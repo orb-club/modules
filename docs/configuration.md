@@ -10,6 +10,7 @@ If your app prefers environment variables, resolve them in your host app and pas
 - `AUTH_REVOKE_URL`
 - `QR_INIT_URL`
 - `QR_POLL_URL`
+- `LENS_GRAPHQL_URL`
 - `MEDIA_GATEWAY`
 - `AUDIO_GATEWAY`
 - `IPFS_GATEWAY`
@@ -38,6 +39,12 @@ If your app prefers environment variables, resolve them in your host app and pas
 - `timeoutMs?: number`
 - `initTimeoutMs?: number`
 - `pollTimeoutMs?: number`
+
+### `lensAuthPlugin(...)`
+
+- `graphqlUrl: string`
+- `timeoutMs?: number`
+- `headers?: Record<string, string>`
 
 ### `mediaPlugin(...)`
 

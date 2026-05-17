@@ -20,6 +20,7 @@ bun add @orb-club/modules
 ```ts
 import { createSDK } from "@orb-club/modules";
 import { authPlugin } from "@orb-club/modules/auth";
+import { lensAuthPlugin } from "@orb-club/modules/auth/lens";
 import { qrAuthPlugin } from "@orb-club/modules/auth/qr";
 import { mediaPlugin } from "@orb-club/modules/media";
 
@@ -28,6 +29,9 @@ const sdk = createSDK({
     authPlugin({
       refreshUrl: "/api/auth/refresh",
       revokeUrl: "/api/auth/revoke",
+    }),
+    lensAuthPlugin({
+      graphqlUrl: "https://api.lens.xyz/graphql",
     }),
     qrAuthPlugin({
       initUrl: "/api/auth/qr/init",
@@ -45,11 +49,17 @@ const nextSession = await sdk.auth.refresh({
   refreshToken: "refresh-token",
 });
 
+const lensSession = await sdk.auth.refreshLensSession({
+  refreshToken: "refresh-token",
+});
+
 const qrSession = await sdk.auth.connectWithQr({
   onInit: ({ qrCode }) => {
     console.log(qrCode);
   },
 });
+
+console.log(qrSession.accessToken);
 
 const imageUrl = sdk.media.parseImage("lens://asset", 768);
 ```
@@ -60,6 +70,7 @@ const imageUrl = sdk.media.parseImage("lens://asset", 768);
 | --- | --- | --- |
 | `@orb-club/modules/auth` | Session refresh/revoke helpers and token utilities | Browser or server |
 | `@orb-club/modules/auth/qr` | QR auth flow helpers layered onto `sdk.auth` | Browser client plus app-provided QR endpoints |
+| `@orb-club/modules/auth/lens` | Lens GraphQL refresh helpers layered onto `sdk.auth` | Browser or server |
 | `@orb-club/modules/media` | Media URL parsing and gateway-aware resolution | Browser or server |
 | `@orb-club/modules/upload/grove` | Browser-side Grove upload plugin with progress tracking | Browser only |
 | `@orb-club/modules/transport/backend` | Minimal JSON backend caller with header injection | Trusted browser/server runtime |
@@ -68,6 +79,8 @@ const imageUrl = sdk.media.parseImage("lens://asset", 768);
 
 - `createSDK` does not auto-register plugins. Import only what you need.
 - The package does not read environment variables directly. Resolve config in your app and pass it into plugin factories.
+- Media parsing resolves `ipfs://`, `ar://`, `lens://`, embedded storage URIs, and existing `thumbnailDimension...` proxy URLs before optional image or audio gateway wrapping.
+- Bare media paths without a recognized URI scheme are returned as-is.
 - `upload/grove` requires browser upload APIs such as `File`, `FormData`, and `XMLHttpRequest`.
 - `transport/backend` is intended for trusted app infrastructure or explicit proxy routes.
 - Framework adapters and UI state are not part of the v1 core package surface.
@@ -80,6 +93,7 @@ The library accepts plain config objects. If your app uses environment variables
 - `AUTH_REVOKE_URL`
 - `QR_INIT_URL`
 - `QR_POLL_URL`
+- `LENS_GRAPHQL_URL`
 - `MEDIA_GATEWAY`
 - `AUDIO_GATEWAY`
 - `GROVE_API_URL`

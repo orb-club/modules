@@ -17,6 +17,7 @@ Capability map:
 - root: `createSDK`, core errors, core types
 - `@orb-club/modules/auth`: `authPlugin`, token/session helpers, auth errors
 - `@orb-club/modules/auth/qr`: `qrAuthPlugin`, QR request helpers, QR errors
+- `@orb-club/modules/auth/lens`: `lensAuthPlugin`, Lens GraphQL refresh helpers
 - `@orb-club/modules/media`: `mediaPlugin`, media MIME helpers
 - `@orb-club/modules/upload/grove`: `groveUploadPlugin`, Grove upload errors
 - `@orb-club/modules/transport/backend`: `backendTransportPlugin`, backend transport errors
@@ -24,9 +25,20 @@ Capability map:
 Runtime map:
 - `auth`: browser or server
 - `auth/qr`: browser client flow with app-provided QR endpoints
+- `auth/lens`: browser or server Lens GraphQL refresh flow
 - `media`: browser or server
 - `upload/grove`: browser-only
 - `transport/backend`: trusted runtime or app proxy
+
+Auth QR behavior:
+- `connectWithQr(...)` resolves on `processed: true` plus `accessToken`
+- `idToken`, `refreshToken`, and `authenticationId` are optional result fields
+- `status: SUCCESS` without `processed: true` is not terminal; continue polling
+
+Media normalization:
+- resolves `ipfs://`, `ar://`, `lens://`, and embedded storage URIs through configured gateways
+- strips existing `thumbnailDimension...` proxy prefixes before optional gateway wrapping
+- preserves `data:`, `blob:`, `file:`, and bare paths without a recognized URI scheme
 
 Rules for agents:
 - Prefer root + subpath imports; do not invent root re-exports for plugins.

@@ -150,6 +150,65 @@ describe("qrAuthPlugin", () => {
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 
+  test("keeps polling when success status arrives before processing completes", async () => {
+    vi.useFakeTimers();
+
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              qrCode: "qr-code",
+              secret: "secret-123",
+            },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: "SUCCESS",
+            data: {
+              processed: false,
+            },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: "SUCCESS",
+            data: {
+              processed: true,
+              accessToken: "access-token",
+            },
+          }),
+        ),
+      );
+
+    const sdk = createSDK({
+      fetch,
+      plugins: [
+        authPlugin({ refreshUrl: "/refresh", revokeUrl: "/revoke" }),
+        qrAuthPlugin({ initUrl: "/api/qr/init", pollUrl: "/api/qr/poll", pollIntervalMs: 25 }),
+      ],
+    });
+
+    const promise = sdk.auth.connectWithQr();
+
+    await vi.advanceTimersByTimeAsync(25);
+
+    await expect(promise).resolves.toEqual(
+      expect.objectContaining({
+        status: "SUCCESS",
+        processed: true,
+        accessToken: "access-token",
+      }),
+    );
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
   test("throws a timeout error when polling does not finish in time", async () => {
     vi.useFakeTimers();
 
@@ -307,7 +366,7 @@ describe("qrAuthPlugin", () => {
     await rejection;
   });
 
-  test("throws a response error for terminal poll responses missing required token data", async () => {
+  test("throws a response error for terminal poll responses missing an access token", async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValueOnce(
@@ -326,7 +385,7 @@ describe("qrAuthPlugin", () => {
             status: "SUCCESS",
             data: {
               processed: true,
-              accessToken: "access-token",
+              idToken: "id-token",
             },
           }),
         ),

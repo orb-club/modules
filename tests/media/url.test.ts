@@ -15,6 +15,19 @@ describe("media url resolution", () => {
     expect(parseUrl("http://example.com/file.png")).toBe("http://example.com/file.png");
   });
 
+  test("matches app media normalization for wrapped and embedded storage urls", () => {
+    expect(
+      parseUrl("https://img.example.com/thumbnailDimension768/https://example.com/image.png"),
+    ).toBe("https://example.com/image.png");
+    expect(parseUrl("https://proxy.example.com/media/ipfs://QmWrapped")).toBe(
+      "https://gw.ipfs-lens.dev/ipfs/QmWrapped",
+    );
+    expect(parseUrl("https://proxy.example.com/media/ar://wrapped-tx")).toBe(
+      "https://arweave.net/wrapped-tx",
+    );
+    expect(parseUrl("example.com/image.png")).toBe("example.com/image.png");
+  });
+
   test("wraps image and audio urls with configured gateways", () => {
     const sdk = createSDK({
       plugins: [
@@ -107,6 +120,25 @@ describe("media url resolution", () => {
     expect(sdk.media.parseAudio("blob:https://app.example.com/456")).toBe(
       "blob:https://app.example.com/456",
     );
+  });
+
+  test("preserves embedded data images instead of gateway-wrapping them", () => {
+    const sdk = createSDK({
+      plugins: [
+        mediaPlugin({
+          imageGateway: "https://img.example.com",
+        }),
+      ],
+    });
+
+    expect(sdk.media.parseImage("https://data:image/png;base64,abc")).toBe(
+      "data:image/png;base64,abc",
+    );
+    expect(
+      sdk.media.parseImage(
+        "https://img.example.com/thumbnailDimension768/https://data:image/png;base64,abc",
+      ),
+    ).toBe("data:image/png;base64,abc");
   });
 
   test("detects media mime categories", () => {

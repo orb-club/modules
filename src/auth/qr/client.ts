@@ -173,15 +173,11 @@ async function fetchJson(
 }
 
 function isSuccessfulPollResponse(payload: ParsedQrPollResponse): payload is QrConnectResult {
-  return (
-    payload.processed === true &&
-    typeof payload.accessToken === "string" &&
-    typeof payload.idToken === "string"
-  );
+  return payload.processed === true && typeof payload.accessToken === "string";
 }
 
 function isTerminalPollResponse(payload: ParsedQrPollResponse): boolean {
-  return payload.processed === true || payload.status === "SUCCESS";
+  return payload.processed === true;
 }
 
 async function runInit(

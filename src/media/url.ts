@@ -21,6 +21,32 @@ function stripIpfsPrefix(path: string): string {
   return path.startsWith("ipfs/") ? path.slice("ipfs/".length) : path;
 }
 
+function stripThumbnailPrefix(url: string): string {
+  let current = url;
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    const thumbnailMatch = current.match(
+      /^(?:https?:\/\/[^/]+(?:\/[^/]+)*\/)?thumbnailDimension\d+\/(.+)$/,
+    );
+    if (thumbnailMatch?.[1]) {
+      current = thumbnailMatch[1];
+      changed = true;
+    }
+  }
+
+  return current;
+}
+
+function normalizeDataUrl(url: string): string | null {
+  if (url.startsWith("data:")) return url;
+  if (url.startsWith("https://data:")) return url.slice("https://".length);
+  if (url.startsWith("http://data:")) return url.slice("http://".length);
+  return null;
+}
+
 function resolveGatewayConfig(config?: MediaPluginConfig) {
   return {
     ipfsGateway: config?.ipfsGateway ?? DEFAULT_IPFS_GATEWAY,
@@ -35,28 +61,37 @@ export function parseUrl(
 ): string | null {
   if (!url) return null;
 
+  const cleanUrl = stripThumbnailPrefix(url);
+  const dataUrl = normalizeDataUrl(cleanUrl);
+  if (dataUrl) return dataUrl;
+
   const gateways = resolveGatewayConfig(config);
 
-  if (url.startsWith("ipfs://")) {
-    return joinGateway(gateways.ipfsGateway, stripIpfsPrefix(url.slice("ipfs://".length)));
+  const ipfsUriIndex = cleanUrl.lastIndexOf("ipfs://");
+  if (ipfsUriIndex !== -1) {
+    return joinGateway(
+      gateways.ipfsGateway,
+      stripIpfsPrefix(cleanUrl.slice(ipfsUriIndex + "ipfs://".length)),
+    );
   }
 
-  if (url.startsWith("ar://")) {
-    return joinGateway(gateways.arweaveGateway, url.slice("ar://".length));
+  const arweaveUriIndex = cleanUrl.lastIndexOf("ar://");
+  if (arweaveUriIndex !== -1) {
+    return joinGateway(gateways.arweaveGateway, cleanUrl.slice(arweaveUriIndex + "ar://".length));
   }
 
-  if (url.startsWith("lens://")) {
-    return joinGateway(gateways.lensGateway, url.slice("lens://".length));
+  if (cleanUrl.startsWith("lens://")) {
+    return joinGateway(gateways.lensGateway, cleanUrl.slice("lens://".length));
   }
 
-  const ipfsIndex = url.lastIndexOf("/ipfs/");
+  const ipfsIndex = cleanUrl.lastIndexOf("/ipfs/");
   if (ipfsIndex !== -1) {
-    return joinGateway(gateways.ipfsGateway, url.slice(ipfsIndex + "/ipfs/".length));
+    return joinGateway(gateways.ipfsGateway, cleanUrl.slice(ipfsIndex + "/ipfs/".length));
   }
 
-  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(url)) {
-    return url;
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(cleanUrl)) {
+    return cleanUrl;
   }
 
-  return `https://${url}`;
+  return cleanUrl;
 }

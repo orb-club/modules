@@ -43,7 +43,6 @@ export type ParsedQrPollResponse = Record<string, unknown> & {
 export type QrConnectResult = ParsedQrPollResponse & {
   processed: true;
   accessToken: string;
-  idToken: string;
 };
 
 export type QrConnectOptions = AuthRequestOptions & {

@@ -51,6 +51,11 @@
       "import": "./dist/auth/qr/index.js",
       "require": "./dist/auth/qr/index.cjs"
     },
+    "./auth/lens": {
+      "types": "./dist/auth/lens/index.d.ts",
+      "import": "./dist/auth/lens/index.js",
+      "require": "./dist/auth/lens/index.cjs"
+    },
     "./media": {
       "types": "./dist/media/index.d.ts",
       "import": "./dist/media/index.js",

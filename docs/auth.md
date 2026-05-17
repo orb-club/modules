@@ -100,8 +100,61 @@ const session = await sdk.auth.connectWithQr({
 });
 ```
 
+`connectWithQr(...)` resolves when polling returns `processed: true` with an
+`accessToken`. `idToken`, `refreshToken`, and `authenticationId` are preserved
+when the provider returns them, but they are not required for a successful QR
+sign-in result.
+
+## `lensAuthPlugin`
+
+Import:
+
+```ts
+import { lensAuthPlugin } from "@orb-club/modules/auth/lens";
+```
+
+`lensAuthPlugin` extends `sdk.auth`. Install `authPlugin(...)` first.
+
+Common config:
+
+- `graphqlUrl`
+- `headers`
+- `timeoutMs`
+
+Capabilities added to `sdk.auth`:
+
+- `refreshLensSession({ refreshToken }, options?)`
+- `syncLensSession(session, options?)`
+- `getLensAccountFromAccessToken(token)`
+
+`syncLensSession(...)` keeps fresh sessions unchanged, refreshes sessions inside
+the refresh window, returns `null` for Lens `ForbiddenError` responses, and
+keeps the hydrated session on transient refresh failures.
+
+Example:
+
+```ts
+const sdk = createSDK({
+  plugins: [
+    authPlugin({
+      refreshUrl: "/api/auth/refresh",
+      revokeUrl: "/api/auth/revoke",
+    }),
+    lensAuthPlugin({
+      graphqlUrl: "https://api.lens.xyz/graphql",
+    }),
+  ],
+});
+
+const session = await sdk.auth.syncLensSession({
+  accessToken: "access-token",
+  refreshToken: "refresh-token",
+});
+```
+
 ## Current Scope
 
 - `auth` is transport-agnostic and centered on session lifecycle.
 - `auth/qr` is an optional login transport.
+- `auth/lens` is an optional Lens GraphQL refresh transport.
 - UI state is not part of the core package.

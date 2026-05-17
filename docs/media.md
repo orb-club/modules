@@ -28,6 +28,14 @@ Common config:
 - `lensGateway`
 - `defaultThumbnailDimension`
 
+Normalization behavior:
+
+- `ipfs://`, `ar://`, and `lens://` inputs resolve through their configured gateways.
+- Storage URIs embedded inside wrapper URLs are resolved from the embedded URI.
+- Existing `thumbnailDimension...` proxy prefixes are stripped before gateway wrapping, so callers can change dimensions without double-wrapping.
+- `data:`, `blob:`, and `file:` URLs are preserved.
+- Bare paths without a recognized URI scheme are returned unchanged.
+
 Example:
 
 ```ts
