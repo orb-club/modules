@@ -12,7 +12,7 @@ import { lensAuthPlugin } from "./lens/plugin";
 import type { LensAuthCapabilities, LensAuthPluginConfig } from "./lens/types";
 import { authPlugin } from "./plugin";
 import { qrAuthPlugin } from "./qr/plugin";
-import type { QrAuthCapabilities, QrAuthPluginConfig } from "./qr/types";
+import type { QrAuthPluginConfig, QrConnectOptions, QrConnectResult } from "./qr/types";
 import type { AuthCapabilities } from "./types";
 
 type OrbLoginSDKOptions = Omit<CreateSDKOptions, "plugins">;
@@ -20,6 +20,15 @@ type OrbLoginSDKOptions = Omit<CreateSDKOptions, "plugins">;
 export type OrbLoginConfig = OrbLoginSDKOptions & {
   qr?: QrAuthPluginConfig;
   lens?: LensAuthPluginConfig;
+};
+
+export type OrbLoginQrInit = {
+  qrCode: string;
+  deepLink?: string;
+};
+
+export type OrbLoginQrOptions = Omit<QrConnectOptions, "onInit"> & {
+  onInit?: (payload: OrbLoginQrInit) => void | Promise<void>;
 };
 
 export type OrbLogin = Pick<
@@ -32,7 +41,7 @@ export type OrbLogin = Pick<
   | "isSessionStale"
   | "shouldRefreshSession"
 > & {
-  connectWithQr: QrAuthCapabilities["connectWithQr"];
+  connectWithQr: (options?: OrbLoginQrOptions) => Promise<QrConnectResult>;
   refresh: LensAuthCapabilities["refreshLensSession"];
   revoke: LensAuthCapabilities["revokeLensSession"];
   syncSession: LensAuthCapabilities["syncLensSession"];
@@ -71,7 +80,21 @@ export function createOrbLogin(config: OrbLoginConfig = {}): OrbLogin {
     getSessionExpiry: sdk.auth.getSessionExpiry,
     isSessionStale: sdk.auth.isSessionStale,
     shouldRefreshSession: sdk.auth.shouldRefreshSession,
-    connectWithQr: sdk.auth.connectWithQr,
+    connectWithQr: (options) => {
+      const { onInit, ...rest } = options ?? {};
+      return sdk.auth.connectWithQr({
+        ...rest,
+        ...(onInit
+          ? {
+              onInit: (payload) =>
+                onInit({
+                  qrCode: payload.qrCode,
+                  ...(payload.deepLink ? { deepLink: payload.deepLink } : {}),
+                }),
+            }
+          : {}),
+      });
+    },
     refresh: sdk.auth.refreshLensSession,
     revoke: sdk.auth.revokeLensSession,
     syncSession: sdk.auth.syncLensSession,

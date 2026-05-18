@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { createSDK } from "../../src";
 import {
@@ -76,6 +76,10 @@ describe("groveUploadPlugin", () => {
     ).XMLHttpRequest = MockXMLHttpRequest;
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test("creates the multipart payload and reports upload progress", async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
@@ -144,6 +148,43 @@ describe("groveUploadPlugin", () => {
       "https://api.example.com/status/storage-key",
       expect.any(Object),
     );
+  });
+
+  test("falls back to the safe poll interval for invalid propagation interval config", async () => {
+    vi.useFakeTimers();
+
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ storage_key: "storage-key", uri: "lens://asset" }])),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "pending" })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "done" })));
+
+    const sdk = createSDK({
+      fetch,
+      plugins: [groveUploadPlugin({ apiUrl: "https://api.example.com", pollIntervalMs: 0 })],
+    });
+
+    const promise = sdk.upload.uploadFile({
+      file: new File(["hello"], "hello.txt", { type: "text/plain" }),
+      account: "0x123",
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetch).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(499);
+    expect(fetch).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    await expect(promise).resolves.toEqual({
+      uri: "lens://asset",
+      gatewayUrl: "https://api.example.com/storage-key",
+      storageKey: "storage-key",
+    });
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   test("fails for non-browser environments without upload apis", async () => {

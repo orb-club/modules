@@ -1,4 +1,10 @@
-export { createOrbLogin, type OrbLogin, type OrbLoginConfig } from "./orb-login";
+export {
+  createOrbLogin,
+  type OrbLogin,
+  type OrbLoginConfig,
+  type OrbLoginQrInit,
+  type OrbLoginQrOptions,
+} from "./orb-login";
 export { authPlugin } from "./plugin";
 export {
   getSessionExpiry,

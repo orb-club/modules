@@ -35,9 +35,11 @@ Auth QR behavior:
 - `createOrbLogin()` is the happy path for browser-owned Orb login
 - default QR init is `https://orbapi.xyz/init-sign-in?credentials=id_access_refresh`
 - default QR poll is `https://orbapi.xyz/poll-sign-in`
+- `createOrbLogin().connectWithQr({ onInit })` exposes only `qrCode` and `deepLink`
 - `connectWithQr(...)` resolves on `processed: true` plus a non-blank `accessToken`
 - `idToken`, `refreshToken`, and `authenticationId` are optional result fields
 - `status: SUCCESS` without `processed: true` is not terminal; continue polling
+- invalid QR poll intervals fall back to the default interval
 
 Lens auth behavior:
 - default Lens GraphQL endpoint is `https://api.lens.xyz/graphql`

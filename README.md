@@ -29,15 +29,17 @@ const session = await orb.connectWithQr({
   },
 });
 
-await persistSession(session);
+const currentSession = session;
 
 const nextSession = await orb.refresh({
-  refreshToken: session.refreshToken,
+  refreshToken: currentSession.refreshToken,
 });
 ```
 
 `createOrbLogin()` uses browser-direct defaults for Orb QR sign-in and Lens
 session refresh. No app auth proxy routes are required for the default flow.
+Token persistence is an app-level security decision; the package does not read
+or write browser storage.
 
 ## Plugins
 

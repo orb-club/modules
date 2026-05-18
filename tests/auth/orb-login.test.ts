@@ -27,8 +27,9 @@ describe("createOrbLogin", () => {
       );
 
     const orb = createOrbLogin({ fetch });
+    const onInit = vi.fn();
 
-    await expect(orb.connectWithQr()).resolves.toEqual(
+    await expect(orb.connectWithQr({ onInit })).resolves.toEqual(
       expect.objectContaining({
         processed: true,
         accessToken: "access-token",
@@ -49,6 +50,10 @@ describe("createOrbLogin", () => {
         body: JSON.stringify({ secret: "secret-123" }),
       }),
     );
+    expect(onInit).toHaveBeenCalledWith({
+      qrCode: "qr-code",
+      deepLink: "orbapp://orb/sign-in",
+    });
   });
 
   test("refreshes directly through Lens GraphQL by default", async () => {

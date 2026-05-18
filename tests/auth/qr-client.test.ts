@@ -54,6 +54,64 @@ describe("qrAuthPlugin", () => {
     );
   });
 
+  test("falls back to the safe poll interval for invalid interval options", async () => {
+    vi.useFakeTimers();
+
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
+        Response.json({
+          data: {
+            qrCode: "qr-code",
+            secret: "secret-123",
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          status: "PENDING",
+          data: {
+            processed: false,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          status: "SUCCESS",
+          data: {
+            processed: true,
+            accessToken: "access-token",
+          },
+        }),
+      );
+
+    const sdk = createSDK({
+      fetch,
+      plugins: [
+        authPlugin({ refreshUrl: "/refresh", revokeUrl: "/revoke" }),
+        qrAuthPlugin({ initUrl: "/api/qr/init", pollUrl: "/api/qr/poll" }),
+      ],
+    });
+
+    const promise = sdk.auth.connectWithQr({ pollIntervalMs: 0 });
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetch).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(fetch).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    await expect(promise).resolves.toEqual(
+      expect.objectContaining({
+        processed: true,
+        accessToken: "access-token",
+      }),
+    );
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
   test("extends auth with QR helpers, sends init before polling, and exposes the init payload", async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()

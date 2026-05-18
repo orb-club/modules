@@ -25,6 +25,13 @@ import {
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_TIMEOUT_MS = 120000;
 
+function resolvePollIntervalMs(config: QrAuthPluginConfig, options?: QrConnectOptions): number {
+  const value = options?.pollIntervalMs ?? config.pollIntervalMs;
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : DEFAULT_POLL_INTERVAL_MS;
+}
+
 function isTimeoutReason(reason: unknown): boolean {
   return reason instanceof DOMException && reason.name === "TimeoutError";
 }
@@ -248,8 +255,7 @@ export async function connectWithQr(
   const resolvedTimeoutMs =
     options?.timeoutMs ?? config.timeoutMs ?? context.defaults?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const timeout = context.createTimeoutSignal(resolvedTimeoutMs, options?.signal);
-  const pollIntervalMs =
-    options?.pollIntervalMs ?? config.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  const pollIntervalMs = resolvePollIntervalMs(config, options);
 
   try {
     const init = await runInit(context, config, options, timeout.signal);

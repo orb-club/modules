@@ -21,7 +21,7 @@ Config:
 - `chainId`
 - `aclTemplate`
 - `propagationTimeoutMs`
-- `pollIntervalMs`
+- `pollIntervalMs` positive finite milliseconds, invalid values use the default
 
 Example:
 

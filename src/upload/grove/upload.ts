@@ -64,7 +64,10 @@ function resolveTimeoutMs(config: GroveUploadPluginConfig, context: GroveUploadC
 }
 
 function resolvePollIntervalMs(config: GroveUploadPluginConfig): number {
-  return config.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  const value = config.pollIntervalMs;
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : DEFAULT_POLL_INTERVAL_MS;
 }
 
 function toRequestError(reason: unknown, message: string): GroveUploadRequestError {

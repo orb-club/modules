@@ -57,7 +57,7 @@ factories. These names are generic and map cleanly onto the current plugin set:
 - `pollUrl?: string` default `https://orbapi.xyz/poll-sign-in`
 - `credentials?: string`
 - `headers?: Record<string, string>`
-- `pollIntervalMs?: number`
+- `pollIntervalMs?: number` positive finite milliseconds, invalid values use the default
 - `timeoutMs?: number`
 - `initTimeoutMs?: number`
 - `pollTimeoutMs?: number`
@@ -83,7 +83,7 @@ factories. These names are generic and map cleanly onto the current plugin set:
 - `chainId?: number`
 - `aclTemplate?: string`
 - `propagationTimeoutMs?: number`
-- `pollIntervalMs?: number`
+- `pollIntervalMs?: number` positive finite milliseconds, invalid values use the default
 
 ### `backendTransportPlugin(...)`
 

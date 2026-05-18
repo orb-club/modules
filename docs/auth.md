@@ -42,7 +42,9 @@ Capabilities:
 - token and session expiry helpers
 
 The default flow is browser-owned. It does not require app `/api/auth/*` proxy
-routes.
+routes. `createOrbLogin()` does not read or write browser storage, and its
+`onInit` callback receives only the display-safe QR fields: `qrCode` and
+`deepLink`.
 
 ## Lower-Level Plugins
 
@@ -157,6 +159,9 @@ const session = await sdk.auth.connectWithQr({
 non-blank `accessToken`. `idToken`, `refreshToken`, and `authenticationId` are
 preserved when the provider returns them, but they are not required for a
 successful QR sign-in result.
+
+The lower-level QR plugin exposes the parsed init payload, including the
+polling `secret`, for custom transports. Treat that payload as sensitive.
 
 ## `lensAuthPlugin`
 

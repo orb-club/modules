@@ -79,8 +79,8 @@ export async function refreshLensSession(
     const response = await context.fetch(config.graphqlUrl ?? DEFAULT_LENS_GRAPHQL_URL, {
       method: "POST",
       headers: {
-        "content-type": "application/json",
         ...(config.headers ?? {}),
+        "content-type": "application/json",
       },
       body: JSON.stringify({
         query: `
@@ -179,9 +179,9 @@ export async function revokeLensSession(
     const response = await context.fetch(config.graphqlUrl ?? DEFAULT_LENS_GRAPHQL_URL, {
       method: "POST",
       headers: {
+        ...(config.headers ?? {}),
         "content-type": "application/json",
         "x-access-token": `Bearer ${input.accessToken}`,
-        ...(config.headers ?? {}),
       },
       body: JSON.stringify({
         query: `
