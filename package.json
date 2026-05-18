@@ -31,7 +31,6 @@
     "dist",
     "README.md",
     "LICENSE",
-    "AGENTS.md",
     "llms.txt",
     "docs/getting-started.md",
     "docs/auth.md",
@@ -39,8 +38,7 @@
     "docs/errors.md",
     "docs/media.md",
     "docs/upload-grove.md",
-    "docs/transport-backend.md",
-    "docs/release.md"
+    "docs/transport-backend.md"
   ],
   "scripts": {
     "build": "tsup",
