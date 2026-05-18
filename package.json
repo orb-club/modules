@@ -24,16 +24,7 @@
     "test:types": "tsc -p tsconfig.type-tests.json --noEmit",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write .",
-    "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "biome check --write --no-errors-on-unmatched"
-    ],
-    "*.{json,md}": [
-      "biome format --write --no-errors-on-unmatched"
-    ]
+    "format": "biome format --write ."
   },
   "exports": {
     ".": {
@@ -73,15 +64,14 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.8",
-    "@commitlint/cli": "^20.5.0",
-    "@commitlint/config-conventional": "^20.5.0",
-    "@types/node": "^25.5.0",
-    "jsdom": "^26.1.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
-    "tsup": "^8.5.0",
-    "vitest": "^3.2.0",
-    "typescript": "^5.5.0"
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^25.8.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.6"
+  },
+  "overrides": {
+    "postcss": "^8.5.14",
+    "vite": "^8.0.13"
   }
 }
