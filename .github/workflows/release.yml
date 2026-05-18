@@ -56,12 +56,36 @@ jobs:
       - name: Package dry run
         run: npm pack --dry-run
 
+      - name: Check npm version
+        id: npm-version
+        run: |
+          node - <<'NODE'
+          const { execFileSync } = require("node:child_process");
+          const { appendFileSync } = require("node:fs");
+          const pkg = require("./package.json");
+
+          let published = false;
+          try {
+            const version = execFileSync(
+              "npm",
+              ["view", `${pkg.name}@${pkg.version}`, "version"],
+              { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+            ).trim();
+            published = version === pkg.version;
+          } catch {
+            published = false;
+          }
+
+          appendFileSync(process.env.GITHUB_OUTPUT, `published=${published}\n`);
+          console.log(`${pkg.name}@${pkg.version} published: ${published}`);
+          NODE
+
       - name: Publish to npm with trusted publishing
-        if: env.NPM_TOKEN_SET == 'false'
+        if: env.NPM_TOKEN_SET == 'false' && steps.npm-version.outputs.published != 'true'
         run: npm publish --access public
 
       - name: Publish to npm with bootstrap token
-        if: env.NPM_TOKEN_SET == 'true'
+        if: env.NPM_TOKEN_SET == 'true' && steps.npm-version.outputs.published != 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public --provenance
