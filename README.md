@@ -29,16 +29,12 @@ const session = await orb.connectWithQr({
   },
 });
 
-const currentSession = session;
-
-const nextSession = await orb.refresh({
-  refreshToken: currentSession.refreshToken,
-});
+useSession(session);
 ```
 
 `createOrbLogin()` uses browser-direct defaults for Orb QR sign-in and Lens
 session refresh. No app auth proxy routes are required for the default flow.
-Token persistence is an app-level security decision; the package does not read
+Session persistence is an app-level security decision; the package does not read
 or write browser storage.
 
 ## Plugins
@@ -54,7 +50,7 @@ or write browser storage.
 
 ## Runtime Boundaries
 
-- `createOrbLogin()` targets `https://orbapi.xyz/init-sign-in`, `https://orbapi.xyz/poll-sign-in`, and `https://api.lens.xyz/graphql` by default.
+- `createOrbLogin()` uses direct Orb QR and Lens GraphQL defaults.
 - `createSDK` is available for custom plugin composition. Import only what you need.
 - The package does not read environment variables directly. Resolve config in your app and pass it into plugin factories.
 - Media parsing resolves `ipfs://`, `ar://`, `lens://`, embedded storage URIs, and existing `thumbnailDimension...` proxy URLs before optional image or audio gateway wrapping.
@@ -62,24 +58,6 @@ or write browser storage.
 - `upload/grove` requires browser upload APIs such as `File`, `FormData`, and `XMLHttpRequest`.
 - `transport/backend` is intended for trusted app infrastructure or explicit proxy routes.
 - Framework adapters and UI state are not part of the v1 core package surface.
-
-## Advanced App Config
-
-The default login flow needs no app routes. If your app uses custom proxies or
-service-backed transport, resolve environment variables in your host app and
-pass values into the lower-level plugin factories. These names work well as a
-generic convention:
-
-- `AUTH_REFRESH_URL`
-- `AUTH_REVOKE_URL`
-- `QR_INIT_URL`
-- `QR_POLL_URL`
-- `LENS_GRAPHQL_URL`
-- `MEDIA_GATEWAY`
-- `AUDIO_GATEWAY`
-- `GROVE_API_URL`
-- `BACKEND_BASE_URL`
-- `BACKEND_SERVICE_TOKEN`
 
 ## Docs
 
@@ -90,7 +68,6 @@ generic convention:
 - [docs/upload-grove.md](docs/upload-grove.md)
 - [docs/transport-backend.md](docs/transport-backend.md)
 - [docs/errors.md](docs/errors.md)
-- [docs/release.md](docs/release.md)
 - `llms.txt` for agent-oriented navigation
 
 ## Development
