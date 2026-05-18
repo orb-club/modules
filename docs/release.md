@@ -31,8 +31,14 @@ After the package exists, configure the trusted publisher:
 
 - npm package: `@orbclub/modules`
 - GitHub repository: `orb-club/modules`
-- Workflow: `.github/workflows/release.yml`
+- Workflow path: `.github/workflows/release.yml`
 - Environment: `npm`
+
+Equivalent npm CLI command:
+
+```bash
+npm trust github @orbclub/modules --repo orb-club/modules --file release.yml --env npm
+```
 
 The workflow uses `id-token: write`, so npm can issue short-lived OIDC-backed
 publish credentials. Public packages published from public repositories through
