@@ -1,12 +1,14 @@
 {
   "name": "@orb-club/modules",
   "version": "0.1.0",
+  "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "README.md",
+    "LICENSE",
     "AGENTS.md",
     "llms.txt",
     "docs/getting-started.md",
