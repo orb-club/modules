@@ -1,10 +1,32 @@
 # Configuration
 
-The package takes plain config objects. It does not read environment variables directly.
+The default login path is `createOrbLogin()` with no config. It uses direct
+browser calls to Orb QR and Lens GraphQL.
+
+The package still takes plain config objects for advanced composition. It does
+not read environment variables directly.
+
+## Login Defaults
+
+```ts
+import { createOrbLogin } from "@orbclub/modules/auth";
+
+const orb = createOrbLogin();
+```
+
+Defaults:
+
+- QR init: `https://orbapi.xyz/init-sign-in`
+- QR poll: `https://orbapi.xyz/poll-sign-in`
+- QR credentials: `id_access_refresh`
+- Lens GraphQL: `https://api.lens.xyz/graphql`
+- QR poll interval: `2_000`
 
 ## Suggested App-Level Env Names
 
-If your app prefers environment variables, resolve them in your host app and pass the values into plugin factories. These names are generic and map cleanly onto the current plugin set:
+If your app prefers environment variables for advanced overrides, resolve them
+in your host app and pass the values into `createOrbLogin(...)` or plugin
+factories. These names are generic and map cleanly onto the current plugin set:
 
 - `AUTH_REFRESH_URL`
 - `AUTH_REVOKE_URL`
@@ -31,8 +53,8 @@ If your app prefers environment variables, resolve them in your host app and pas
 
 ### `qrAuthPlugin(...)`
 
-- `initUrl?: string`
-- `pollUrl?: string`
+- `initUrl?: string` default `https://orbapi.xyz/init-sign-in`
+- `pollUrl?: string` default `https://orbapi.xyz/poll-sign-in`
 - `credentials?: string`
 - `headers?: Record<string, string>`
 - `pollIntervalMs?: number`
@@ -42,7 +64,7 @@ If your app prefers environment variables, resolve them in your host app and pas
 
 ### `lensAuthPlugin(...)`
 
-- `graphqlUrl: string`
+- `graphqlUrl?: string` default `https://api.lens.xyz/graphql`
 - `timeoutMs?: number`
 - `headers?: Record<string, string>`
 
@@ -71,7 +93,7 @@ If your app prefers environment variables, resolve them in your host app and pas
 - `serviceCredential?: { header: string; value: string; prefix?: string }`
 - `accessToken?: { header?: string; prefix?: string }`
 
-## Canonical Composition
+## Advanced Composition
 
 ```ts
 const sdk = createSDK({

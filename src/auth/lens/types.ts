@@ -1,8 +1,8 @@
 import type { SDKPlugin } from "../../core/types";
-import type { AuthRequestOptions, AuthSession } from "../types";
+import type { AuthRequestOptions, AuthSession, RevokeSessionInput } from "../types";
 
 export type LensAuthPluginConfig = {
-  graphqlUrl: string;
+  graphqlUrl?: string;
   timeoutMs?: number;
   headers?: Record<string, string>;
 };
@@ -25,6 +25,10 @@ export type LensSyncSessionOptions = AuthRequestOptions & {
   refreshWindowSeconds?: number;
 };
 
+export type LensRevokeSessionResult = {
+  revoked: true;
+};
+
 export class LensAuthForbiddenError extends Error {
   reason?: string;
 
@@ -41,6 +45,10 @@ export type LensAuthCapabilities = {
     input: LensRefreshSessionInput,
     options?: AuthRequestOptions,
   ) => Promise<LensRefreshSessionResult>;
+  revokeLensSession: (
+    input: RevokeSessionInput,
+    options?: AuthRequestOptions,
+  ) => Promise<LensRevokeSessionResult>;
   syncLensSession: (
     session: LensSession | null,
     options?: LensSyncSessionOptions,

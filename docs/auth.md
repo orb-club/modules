@@ -1,5 +1,51 @@
 # Auth
 
+## `createOrbLogin`
+
+Import:
+
+```ts
+import { createOrbLogin } from "@orbclub/modules/auth";
+```
+
+Default usage:
+
+```ts
+const orb = createOrbLogin();
+
+const session = await orb.connectWithQr({
+  onInit: ({ qrCode, deepLink }) => {
+    renderQrSignIn({ qrCode, deepLink });
+  },
+});
+
+const nextSession = await orb.refresh({
+  refreshToken: session.refreshToken,
+});
+```
+
+Defaults:
+
+- QR init: `https://orbapi.xyz/init-sign-in`
+- QR poll: `https://orbapi.xyz/poll-sign-in`
+- QR credentials: `id_access_refresh`
+- Lens GraphQL: `https://api.lens.xyz/graphql`
+- QR poll interval: `2_000`
+
+Capabilities:
+
+- `connectWithQr(options?)`
+- `refresh({ refreshToken }, options?)`
+- `revoke({ authenticationId, accessToken }, options?)`
+- `syncSession(session, options?)`
+- `getAccountFromAccessToken(token)`
+- token and session expiry helpers
+
+The default flow is browser-owned. It does not require app `/api/auth/*` proxy
+routes.
+
+## Lower-Level Plugins
+
 ## `authPlugin`
 
 Import:
@@ -57,7 +103,14 @@ import { qrAuthPlugin } from "@orbclub/modules/auth/qr";
 
 `qrAuthPlugin` extends `sdk.auth`. Install `authPlugin(...)` first.
 
-Common config:
+Default config:
+
+- `initUrl`: `https://orbapi.xyz/init-sign-in`
+- `pollUrl`: `https://orbapi.xyz/poll-sign-in`
+- `credentials`: `id_access_refresh`
+- `pollIntervalMs`: `2_000`
+
+Common overrides:
 
 - `initUrl`
 - `pollUrl`
@@ -115,7 +168,11 @@ import { lensAuthPlugin } from "@orbclub/modules/auth/lens";
 
 `lensAuthPlugin` extends `sdk.auth`. Install `authPlugin(...)` first.
 
-Common config:
+Default config:
+
+- `graphqlUrl`: `https://api.lens.xyz/graphql`
+
+Common overrides:
 
 - `graphqlUrl`
 - `headers`
@@ -124,6 +181,7 @@ Common config:
 Capabilities added to `sdk.auth`:
 
 - `refreshLensSession({ refreshToken }, options?)`
+- `revokeLensSession({ authenticationId, accessToken }, options?)`
 - `syncLensSession(session, options?)`
 - `getLensAccountFromAccessToken(token)`
 
@@ -157,7 +215,7 @@ const session = await sdk.auth.syncLensSession({
 
 ## Current Scope
 
-- `auth` is transport-agnostic and centered on session lifecycle.
-- `auth/qr` is an optional login transport.
-- `auth/lens` is an optional Lens GraphQL refresh transport.
+- `auth` exposes the browser-direct Orb login helper and lower-level session primitives.
+- `auth/qr` is the lower-level QR login transport.
+- `auth/lens` is the lower-level Lens GraphQL refresh/revoke transport.
 - UI state is not part of the core package.

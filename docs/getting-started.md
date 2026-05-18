@@ -9,54 +9,35 @@ bun add @orbclub/modules
 ## Canonical Setup
 
 ```ts
-import { createSDK } from "@orbclub/modules";
-import { authPlugin } from "@orbclub/modules/auth";
-import { qrAuthPlugin } from "@orbclub/modules/auth/qr";
-import { mediaPlugin } from "@orbclub/modules/media";
+import { createOrbLogin } from "@orbclub/modules/auth";
 
-const sdk = createSDK({
-  plugins: [
-    authPlugin({
-      refreshUrl: "/api/auth/refresh",
-      revokeUrl: "/api/auth/revoke",
-    }),
-    qrAuthPlugin({
-      initUrl: "/api/auth/qr/init",
-      pollUrl: "/api/auth/qr/poll",
-      pollIntervalMs: 2_000,
-    }),
-    mediaPlugin({
-      imageGateway: "https://cdn.example.com",
-      audioGateway: "https://audio.example.com",
-    }),
-  ],
+const orb = createOrbLogin();
+
+const session = await orb.connectWithQr({
+  onInit: ({ qrCode, deepLink }) => {
+    renderQrSignIn({ qrCode, deepLink });
+  },
 });
 ```
 
 This creates:
 
-- `sdk.auth.refresh(...)`
-- `sdk.auth.revoke(...)`
-- `sdk.auth.connectWithQr(...)`
-- `sdk.media.parse(...)`
-- `sdk.media.parseImage(...)`
+- `orb.connectWithQr(...)`
+- `orb.refresh(...)`
+- `orb.revoke(...)`
+- `orb.syncSession(...)`
+- token expiry helpers
 
 ## Add Plugins As Needed
 
 ```ts
+import { createSDK } from "@orbclub/modules";
+import { mediaPlugin } from "@orbclub/modules/media";
 import { groveUploadPlugin } from "@orbclub/modules/upload/grove";
 import { backendTransportPlugin } from "@orbclub/modules/transport/backend";
 
 const sdk = createSDK({
   plugins: [
-    authPlugin({
-      refreshUrl: "/api/auth/refresh",
-      revokeUrl: "/api/auth/revoke",
-    }),
-    qrAuthPlugin({
-      initUrl: "/api/auth/qr/init",
-      pollUrl: "/api/auth/qr/poll",
-    }),
     mediaPlugin(),
     groveUploadPlugin({
       apiUrl: "https://api.grove.storage",
@@ -72,5 +53,6 @@ const sdk = createSDK({
 
 - The package does not register plugins automatically.
 - The package does not read environment variables directly.
+- Orb login uses direct browser calls to Orb QR and Lens GraphQL by default.
 - `upload/grove` needs browser upload APIs.
 - `transport/backend` is best used in trusted app infrastructure.

@@ -1,4 +1,9 @@
 import {
+  DEFAULT_ORB_QR_CREDENTIALS,
+  DEFAULT_ORB_QR_INIT_URL,
+  DEFAULT_ORB_QR_POLL_URL,
+} from "../defaults";
+import {
   createQrInitRequest,
   createQrPollRequest,
   parseQrInitResponse,
@@ -17,8 +22,6 @@ import {
   QrTimeoutError,
 } from "./types";
 
-const DEFAULT_INIT_URL = "/api/qr/init";
-const DEFAULT_POLL_URL = "/api/qr/poll";
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_TIMEOUT_MS = 120000;
 
@@ -191,8 +194,8 @@ async function runInit(
   signal?: AbortSignal,
 ): Promise<ParsedQrInitResponse> {
   const request = createQrInitRequest({
-    endpoint: config.initUrl ?? DEFAULT_INIT_URL,
-    credentials: options?.credentials ?? config.credentials,
+    endpoint: config.initUrl ?? DEFAULT_ORB_QR_INIT_URL,
+    credentials: options?.credentials ?? config.credentials ?? DEFAULT_ORB_QR_CREDENTIALS,
     headers: {
       ...(config.headers ?? {}),
       ...(options?.headers ?? {}),
@@ -218,7 +221,7 @@ async function runPoll(
   signal?: AbortSignal,
 ): Promise<ParsedQrPollResponse> {
   const request = createQrPollRequest({
-    endpoint: config.pollUrl ?? DEFAULT_POLL_URL,
+    endpoint: config.pollUrl ?? DEFAULT_ORB_QR_POLL_URL,
     secret,
     headers: {
       ...(config.headers ?? {}),

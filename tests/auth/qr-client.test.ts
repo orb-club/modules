@@ -9,6 +9,51 @@ describe("qrAuthPlugin", () => {
     vi.useRealTimers();
   });
 
+  test("uses browser-direct Orb QR defaults without config", async () => {
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
+        Response.json({
+          data: {
+            qrCode: "qr-code",
+            secret: "secret-123",
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          status: "SUCCESS",
+          data: {
+            processed: true,
+            accessToken: "access-token",
+          },
+        }),
+      );
+
+    const sdk = createSDK({
+      fetch,
+      plugins: [authPlugin({ refreshUrl: "/refresh", revokeUrl: "/revoke" }), qrAuthPlugin()],
+    });
+
+    await expect(sdk.auth.connectWithQr()).resolves.toEqual(
+      expect.objectContaining({
+        processed: true,
+        accessToken: "access-token",
+      }),
+    );
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "https://orbapi.xyz/init-sign-in?credentials=id_access_refresh",
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://orbapi.xyz/poll-sign-in",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
   test("extends auth with QR helpers, sends init before polling, and exposes the init payload", async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()

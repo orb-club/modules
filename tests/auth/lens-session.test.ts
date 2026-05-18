@@ -66,6 +66,46 @@ describe("lensAuthPlugin", () => {
     });
   });
 
+  test("revokes directly against the configured Lens GraphQL endpoint", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as {
+        query: string;
+        variables: { request: { authenticationId: string } };
+      };
+      const headers = new Headers(init?.headers);
+
+      expect(_input).toBe("https://api.lens.xyz/graphql");
+      expect(init?.method).toBe("POST");
+      expect(headers.get("x-access-token")).toBe("Bearer access-token");
+      expect(body.query).toContain("mutation RevokeAuthentication");
+      expect(body.variables).toEqual({
+        request: {
+          authenticationId: "auth-123",
+        },
+      });
+
+      return Response.json({
+        data: {
+          revokeAuthentication: null,
+        },
+      });
+    });
+
+    const sdk = createSDK({
+      fetch,
+      plugins: [
+        authPlugin({ refreshUrl: "/refresh", revokeUrl: "/revoke" }),
+        lensAuthPlugin({ graphqlUrl: "https://api.lens.xyz/graphql" }),
+      ],
+    });
+
+    await expect(
+      sdk.auth.revokeLensSession({ authenticationId: "auth-123", accessToken: "access-token" }),
+    ).resolves.toEqual({
+      revoked: true,
+    });
+  });
+
   test("syncs a refreshable session and preserves missing token fields", async () => {
     const accessToken = createToken({
       exp: Math.floor(Date.now() / 1000) + 120,

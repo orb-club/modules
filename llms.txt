@@ -1,6 +1,6 @@
 # @orbclub/modules
 
-Purpose: auth-first, plugin-based SDK for token/session flows, QR auth, media parsing, Grove uploads, and optional backend transport.
+Purpose: auth-first modules for browser-direct Orb login, Lens session refresh, QR auth, media parsing, Grove uploads, and optional backend transport.
 
 Read in this order:
 - `README.md`
@@ -16,9 +16,9 @@ Read in this order:
 
 Capability map:
 - root: `createSDK`, core errors, core types
-- `@orbclub/modules/auth`: `authPlugin`, token/session helpers, auth errors
+- `@orbclub/modules/auth`: `createOrbLogin`, `authPlugin`, token/session helpers, auth errors
 - `@orbclub/modules/auth/qr`: `qrAuthPlugin`, QR request helpers, QR errors
-- `@orbclub/modules/auth/lens`: `lensAuthPlugin`, Lens GraphQL refresh helpers
+- `@orbclub/modules/auth/lens`: `lensAuthPlugin`, Lens GraphQL refresh/revoke helpers
 - `@orbclub/modules/media`: `mediaPlugin`, media MIME helpers
 - `@orbclub/modules/upload/grove`: `groveUploadPlugin`, Grove upload errors
 - `@orbclub/modules/transport/backend`: `backendTransportPlugin`, backend transport errors
@@ -32,12 +32,17 @@ Runtime map:
 - `transport/backend`: trusted runtime or app proxy
 
 Auth QR behavior:
+- `createOrbLogin()` is the happy path for browser-owned Orb login
+- default QR init is `https://orbapi.xyz/init-sign-in?credentials=id_access_refresh`
+- default QR poll is `https://orbapi.xyz/poll-sign-in`
 - `connectWithQr(...)` resolves on `processed: true` plus a non-blank `accessToken`
 - `idToken`, `refreshToken`, and `authenticationId` are optional result fields
 - `status: SUCCESS` without `processed: true` is not terminal; continue polling
 
 Lens auth behavior:
+- default Lens GraphQL endpoint is `https://api.lens.xyz/graphql`
 - `refreshLensSession(...)` requires a non-blank `refreshToken`
+- `revokeLensSession(...)` requires a non-blank `authenticationId` and `accessToken`
 - Lens refresh success requires `AuthenticationTokens` with a non-blank `accessToken`
 - `syncLensSession(...)` returns `null` for Lens `ForbiddenError` responses and keeps the hydrated session on transient failures
 

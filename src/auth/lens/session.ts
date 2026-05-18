@@ -1,11 +1,14 @@
 import type { SDKContext } from "../../core/types";
+import { DEFAULT_LENS_GRAPHQL_URL } from "../defaults";
 import { shouldRefreshSession } from "../session";
 import { decodeToken, isTokenExpired } from "../token";
+import type { AuthRequestOptions, RevokeSessionInput } from "../types";
 import { AuthRequestError, AuthSessionError } from "../types";
 import type {
   LensAuthPluginConfig,
   LensRefreshSessionInput,
   LensRefreshSessionResult,
+  LensRevokeSessionResult,
   LensSession,
   LensSyncSessionOptions,
 } from "./types";
@@ -73,7 +76,7 @@ export async function refreshLensSession(
   );
 
   try {
-    const response = await context.fetch(config.graphqlUrl, {
+    const response = await context.fetch(config.graphqlUrl ?? DEFAULT_LENS_GRAPHQL_URL, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -146,6 +149,86 @@ export async function refreshLensSession(
     }
 
     throw new AuthRequestError("Lens refresh request failed", "refresh", {
+      cause: error,
+    });
+  } finally {
+    timeout.cancel();
+  }
+}
+
+export async function revokeLensSession(
+  context: SDKContext,
+  config: LensAuthPluginConfig,
+  input: RevokeSessionInput,
+  options?: AuthRequestOptions,
+): Promise<LensRevokeSessionResult> {
+  if (!isNonBlankString(input.authenticationId)) {
+    throw new AuthSessionError("An authenticationId is required to revoke a session.", "revoke");
+  }
+
+  if (!isNonBlankString(input.accessToken)) {
+    throw new AuthSessionError("An accessToken is required to revoke a session.", "revoke");
+  }
+
+  const timeout = context.createTimeoutSignal(
+    options?.timeoutMs ?? config.timeoutMs,
+    options?.signal,
+  );
+
+  try {
+    const response = await context.fetch(config.graphqlUrl ?? DEFAULT_LENS_GRAPHQL_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-access-token": `Bearer ${input.accessToken}`,
+        ...(config.headers ?? {}),
+      },
+      body: JSON.stringify({
+        query: `
+          mutation RevokeAuthentication($request: RevokeAuthenticationRequest!) {
+            revokeAuthentication(request: $request)
+          }
+        `,
+        variables: {
+          request: {
+            authenticationId: input.authenticationId,
+          },
+        },
+      }),
+      signal: timeout.signal,
+    });
+
+    const payload = (await response.json().catch(() => undefined)) as unknown;
+    const graphQLError = getGraphQLErrorMessage(payload);
+    if (graphQLError) {
+      throw new AuthRequestError(graphQLError, "revoke", {
+        status: response.ok ? 400 : response.status,
+      });
+    }
+
+    if (!response.ok) {
+      throw new AuthRequestError("Lens revoke request failed", "revoke", {
+        status: response.status,
+      });
+    }
+
+    const data = isRecord(payload) && isRecord(payload.data) ? payload.data : undefined;
+    const revokeResult = data?.revokeAuthentication;
+    if (
+      !data ||
+      !("revokeAuthentication" in data) ||
+      (revokeResult !== null && revokeResult !== true)
+    ) {
+      throw new AuthRequestError("Lens revoke response did not confirm revocation", "revoke");
+    }
+
+    return { revoked: true };
+  } catch (error) {
+    if (error instanceof AuthRequestError) {
+      throw error;
+    }
+
+    throw new AuthRequestError("Lens revoke request failed", "revoke", {
       cause: error,
     });
   } finally {

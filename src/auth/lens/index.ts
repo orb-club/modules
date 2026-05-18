@@ -2,6 +2,7 @@ export { lensAuthPlugin } from "./plugin";
 export {
   getLensAccountFromAccessToken,
   refreshLensSession,
+  revokeLensSession,
   syncLensSession,
 } from "./session";
 export {
@@ -11,6 +12,7 @@ export {
   type LensAuthPluginConfig,
   type LensRefreshSessionInput,
   type LensRefreshSessionResult,
+  type LensRevokeSessionResult,
   type LensSession,
   type LensSyncSessionOptions,
 } from "./types";
