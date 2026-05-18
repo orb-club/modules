@@ -3,16 +3,16 @@
 ## Install
 
 ```bash
-bun add @orb-club/modules
+bun add @orbclub/modules
 ```
 
 ## Canonical Setup
 
 ```ts
-import { createSDK } from "@orb-club/modules";
-import { authPlugin } from "@orb-club/modules/auth";
-import { qrAuthPlugin } from "@orb-club/modules/auth/qr";
-import { mediaPlugin } from "@orb-club/modules/media";
+import { createSDK } from "@orbclub/modules";
+import { authPlugin } from "@orbclub/modules/auth";
+import { qrAuthPlugin } from "@orbclub/modules/auth/qr";
+import { mediaPlugin } from "@orbclub/modules/media";
 
 const sdk = createSDK({
   plugins: [
@@ -44,8 +44,8 @@ This creates:
 ## Add Plugins As Needed
 
 ```ts
-import { groveUploadPlugin } from "@orb-club/modules/upload/grove";
-import { backendTransportPlugin } from "@orb-club/modules/transport/backend";
+import { groveUploadPlugin } from "@orbclub/modules/upload/grove";
+import { backendTransportPlugin } from "@orbclub/modules/transport/backend";
 
 const sdk = createSDK({
   plugins: [

@@ -1,4 +1,4 @@
-# @orb-club/modules
+# @orbclub/modules
 
 Purpose: auth-first, plugin-based SDK for token/session flows, QR auth, media parsing, Grove uploads, and optional backend transport.
 
@@ -11,16 +11,17 @@ Read in this order:
 - `docs/upload-grove.md`
 - `docs/transport-backend.md`
 - `docs/errors.md`
+- `docs/release.md`
 - `AGENTS.md`
 
 Capability map:
 - root: `createSDK`, core errors, core types
-- `@orb-club/modules/auth`: `authPlugin`, token/session helpers, auth errors
-- `@orb-club/modules/auth/qr`: `qrAuthPlugin`, QR request helpers, QR errors
-- `@orb-club/modules/auth/lens`: `lensAuthPlugin`, Lens GraphQL refresh helpers
-- `@orb-club/modules/media`: `mediaPlugin`, media MIME helpers
-- `@orb-club/modules/upload/grove`: `groveUploadPlugin`, Grove upload errors
-- `@orb-club/modules/transport/backend`: `backendTransportPlugin`, backend transport errors
+- `@orbclub/modules/auth`: `authPlugin`, token/session helpers, auth errors
+- `@orbclub/modules/auth/qr`: `qrAuthPlugin`, QR request helpers, QR errors
+- `@orbclub/modules/auth/lens`: `lensAuthPlugin`, Lens GraphQL refresh helpers
+- `@orbclub/modules/media`: `mediaPlugin`, media MIME helpers
+- `@orbclub/modules/upload/grove`: `groveUploadPlugin`, Grove upload errors
+- `@orbclub/modules/transport/backend`: `backendTransportPlugin`, backend transport errors
 
 Runtime map:
 - `auth`: browser or server

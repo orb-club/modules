@@ -3,7 +3,7 @@
 Import:
 
 ```ts
-import { groveUploadPlugin } from "@orb-club/modules/upload/grove";
+import { groveUploadPlugin } from "@orbclub/modules/upload/grove";
 ```
 
 `groveUploadPlugin(...)` adds `sdk.upload.uploadFile(...)`.

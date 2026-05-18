@@ -1,4 +1,4 @@
-# @orb-club/modules
+# @orbclub/modules
 
 Auth-first, plugin-based TypeScript SDK for apps built on token-based auth, media primitives, uploads, and optional backend transport.
 
@@ -12,17 +12,17 @@ The package surface is intentionally small:
 ## Install
 
 ```bash
-bun add @orb-club/modules
+bun add @orbclub/modules
 ```
 
 ## Quick Start
 
 ```ts
-import { createSDK } from "@orb-club/modules";
-import { authPlugin } from "@orb-club/modules/auth";
-import { lensAuthPlugin } from "@orb-club/modules/auth/lens";
-import { qrAuthPlugin } from "@orb-club/modules/auth/qr";
-import { mediaPlugin } from "@orb-club/modules/media";
+import { createSDK } from "@orbclub/modules";
+import { authPlugin } from "@orbclub/modules/auth";
+import { lensAuthPlugin } from "@orbclub/modules/auth/lens";
+import { qrAuthPlugin } from "@orbclub/modules/auth/qr";
+import { mediaPlugin } from "@orbclub/modules/media";
 
 const sdk = createSDK({
   plugins: [
@@ -68,12 +68,12 @@ const imageUrl = sdk.media.parseImage("lens://asset", 768);
 
 | Import | Purpose | Runtime |
 | --- | --- | --- |
-| `@orb-club/modules/auth` | Session refresh/revoke helpers and token utilities | Browser or server |
-| `@orb-club/modules/auth/qr` | QR auth flow helpers layered onto `sdk.auth` | Browser client plus app-provided QR endpoints |
-| `@orb-club/modules/auth/lens` | Lens GraphQL refresh helpers layered onto `sdk.auth` | Browser or server |
-| `@orb-club/modules/media` | Media URL parsing and gateway-aware resolution | Browser or server |
-| `@orb-club/modules/upload/grove` | Browser-side Grove upload plugin with progress tracking | Browser only |
-| `@orb-club/modules/transport/backend` | Minimal JSON backend caller with header injection | Trusted browser/server runtime |
+| `@orbclub/modules/auth` | Session refresh/revoke helpers and token utilities | Browser or server |
+| `@orbclub/modules/auth/qr` | QR auth flow helpers layered onto `sdk.auth` | Browser client plus app-provided QR endpoints |
+| `@orbclub/modules/auth/lens` | Lens GraphQL refresh helpers layered onto `sdk.auth` | Browser or server |
+| `@orbclub/modules/media` | Media URL parsing and gateway-aware resolution | Browser or server |
+| `@orbclub/modules/upload/grove` | Browser-side Grove upload plugin with progress tracking | Browser only |
+| `@orbclub/modules/transport/backend` | Minimal JSON backend caller with header injection | Trusted browser/server runtime |
 
 ## Runtime Boundaries
 
@@ -109,6 +109,7 @@ The library accepts plain config objects. If your app uses environment variables
 - [docs/upload-grove.md](docs/upload-grove.md)
 - [docs/transport-backend.md](docs/transport-backend.md)
 - [docs/errors.md](docs/errors.md)
+- [docs/release.md](docs/release.md)
 - `llms.txt` for agent-oriented navigation
 
 ## Development
@@ -120,4 +121,4 @@ bun run test
 bun run lint
 ```
 
-Pre-commit hooks run formatting on staged files. Update `README.md`, `llms.txt`, and the relevant files under `docs/` whenever the public API or examples change.
+CI runs typechecking, runtime tests, type tests, linting, build, and package dry-run checks. Update `README.md`, `llms.txt`, and the relevant files under `docs/` whenever the public API or examples change.

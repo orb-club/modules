@@ -3,7 +3,7 @@
 Import:
 
 ```ts
-import { mediaPlugin } from "@orb-club/modules/media";
+import { mediaPlugin } from "@orbclub/modules/media";
 ```
 
 `mediaPlugin(...)` adds `sdk.media`.

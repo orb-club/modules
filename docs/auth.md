@@ -5,7 +5,7 @@
 Import:
 
 ```ts
-import { authPlugin } from "@orb-club/modules/auth";
+import { authPlugin } from "@orbclub/modules/auth";
 ```
 
 Required config:
@@ -52,7 +52,7 @@ const session = await sdk.auth.refresh({
 Import:
 
 ```ts
-import { qrAuthPlugin } from "@orb-club/modules/auth/qr";
+import { qrAuthPlugin } from "@orbclub/modules/auth/qr";
 ```
 
 `qrAuthPlugin` extends `sdk.auth`. Install `authPlugin(...)` first.
@@ -110,7 +110,7 @@ successful QR sign-in result.
 Import:
 
 ```ts
-import { lensAuthPlugin } from "@orb-club/modules/auth/lens";
+import { lensAuthPlugin } from "@orbclub/modules/auth/lens";
 ```
 
 `lensAuthPlugin` extends `sdk.auth`. Install `authPlugin(...)` first.

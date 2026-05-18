@@ -3,7 +3,7 @@
 Import:
 
 ```ts
-import { backendTransportPlugin } from "@orb-club/modules/transport/backend";
+import { backendTransportPlugin } from "@orbclub/modules/transport/backend";
 ```
 
 `backendTransportPlugin(...)` adds `sdk.transport.call(...)`.

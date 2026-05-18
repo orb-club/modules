@@ -6,17 +6,17 @@
 - `SDKConfigurationError`
 - `SDKPluginCollisionError`
 
-Core errors come from `@orb-club/modules`.
+Core errors come from `@orbclub/modules`.
 
 ## Auth
 
-From `@orb-club/modules/auth`:
+From `@orbclub/modules/auth`:
 
 - `AuthError`
 - `AuthSessionError`
 - `AuthRequestError`
 
-From `@orb-club/modules/auth/qr`:
+From `@orbclub/modules/auth/qr`:
 
 - `QrAuthError`
 - `QrRequestError`
@@ -26,7 +26,7 @@ From `@orb-club/modules/auth/qr`:
 
 ## Upload
 
-From `@orb-club/modules/upload/grove`:
+From `@orbclub/modules/upload/grove`:
 
 - `GroveUploadError`
 - `GroveUploadEnvironmentError`
@@ -35,7 +35,7 @@ From `@orb-club/modules/upload/grove`:
 
 ## Transport
 
-From `@orb-club/modules/transport/backend`:
+From `@orbclub/modules/transport/backend`:
 
 - `BackendTransportError`
 - `BackendTransportConfigError`
