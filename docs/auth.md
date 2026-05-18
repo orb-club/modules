@@ -12,16 +12,19 @@ Default usage:
 
 ```ts
 const orb = createOrbLogin();
+const qrImage = document.querySelector<HTMLImageElement>("#orb-qr");
+const orbLink = document.querySelector<HTMLAnchorElement>("#orb-link");
 
 const session = await orb.connectWithQr({
   onInit: ({ qrCode, deepLink }) => {
-    renderQrSignIn({ qrCode, deepLink });
+    if (qrImage) qrImage.src = qrCode;
+    if (orbLink && deepLink) orbLink.href = deepLink;
   },
 });
 
-const nextSession = await orb.refresh({
-  refreshToken: session.refreshToken,
-});
+const nextSession = session.refreshToken
+  ? await orb.refresh({ refreshToken: session.refreshToken })
+  : session;
 ```
 
 Defaults:
@@ -148,9 +151,13 @@ const sdk = createSDK({
   ],
 });
 
+const qrImage = document.querySelector<HTMLImageElement>("#orb-qr");
+const orbLink = document.querySelector<HTMLAnchorElement>("#orb-link");
+
 const session = await sdk.auth.connectWithQr({
   onInit: ({ qrCode, deepLink }) => {
-    renderQrSignIn({ qrCode, deepLink });
+    if (qrImage) qrImage.src = qrCode;
+    if (orbLink && deepLink) orbLink.href = deepLink;
   },
 });
 ```

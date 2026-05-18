@@ -7,12 +7,12 @@ This package publishes to npm as `@orbclub/modules`.
 Each npm version maps to one immutable git tag:
 
 ```bash
-modules-v0.1.0
+modules-v<version>
 ```
 
 The release workflow refuses to publish unless the pushed tag exactly matches
-the `package.json` version. For example, `package.json` version `0.1.0` must be
-published from tag `modules-v0.1.0`.
+the `package.json` version. For example, `package.json` version `1.2.3` must be
+published from tag `modules-v1.2.3`.
 
 Do not create a branch per version by default. Use git tags plus npm package
 immutability for normal releases. Create a maintenance branch only when an older
@@ -48,16 +48,13 @@ The first publish path uses the same workflow with `NPM_TOKEN` and
 `npm publish --provenance`. After trusted publishing is configured, remove the
 `NPM_TOKEN` secret so the workflow uses OIDC only.
 
-## First Publish
+## Release Checklist
 
-Before the first real publish, verify that the package does not already exist:
+Before publishing, verify that the exact package version does not already exist:
 
 ```bash
-npm view @orbclub/modules version
+npm view @orbclub/modules@<version> version
 ```
-
-Create a temporary npm automation token, store it as the GitHub repository
-secret `NPM_TOKEN`, then create and push the release tag:
 
 ```bash
 bun install
@@ -68,29 +65,30 @@ bun run lint
 bun run build
 npm pack --dry-run
 git status --short
-git tag -a modules-v0.1.0 -m "@orbclub/modules v0.1.0"
 git push origin main
-git push origin modules-v0.1.0
+git tag -a modules-v<version> -m "@orbclub/modules v<version>"
+git push origin modules-v<version>
 ```
 
 The tag push starts `.github/workflows/release.yml`.
 
-After the first publish, configure trusted publishing and delete the temporary
-`NPM_TOKEN` secret.
+If trusted publishing is not configured yet, publish with the npm CLI after the
+checks pass, then push the matching tag. The workflow is idempotent for already
+published versions.
 
 ## Pinning npm to GitHub
 
 Consumers pin an exact npm version:
 
 ```bash
-bun add @orbclub/modules@0.1.0
+npm install @orbclub/modules@<version>
 ```
 
 To audit where that package came from:
 
 ```bash
-npm view @orbclub/modules@0.1.0 version gitHead dist.integrity
-git rev-list -n 1 modules-v0.1.0
+npm view @orbclub/modules@<version> version gitHead dist.integrity
+git rev-list -n 1 modules-v<version>
 ```
 
 The npm version, git tag, and workflow provenance should all point to the same

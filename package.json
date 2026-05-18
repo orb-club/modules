@@ -1,6 +1,6 @@
 {
   "name": "@orbclub/modules",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Auth-first plugin SDK for apps built on Orb and Lens primitives.",
   "license": "MIT",
   "type": "module",
@@ -9,7 +9,7 @@
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/orb-club/modules.git"
+    "url": "git+https://github.com/orb-club/modules.git"
   },
   "homepage": "https://github.com/orb-club/modules#readme",
   "bugs": {

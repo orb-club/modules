@@ -13,7 +13,7 @@ The package surface is intentionally small:
 ## Install
 
 ```bash
-bun add @orbclub/modules
+npm install @orbclub/modules
 ```
 
 ## Quick Start
@@ -22,14 +22,15 @@ bun add @orbclub/modules
 import { createOrbLogin } from "@orbclub/modules/auth";
 
 const orb = createOrbLogin();
+const qrImage = document.querySelector<HTMLImageElement>("#orb-qr");
+const orbLink = document.querySelector<HTMLAnchorElement>("#orb-link");
 
 const session = await orb.connectWithQr({
   onInit: ({ qrCode, deepLink }) => {
-    renderQrSignIn({ qrCode, deepLink });
+    if (qrImage) qrImage.src = qrCode;
+    if (orbLink && deepLink) orbLink.href = deepLink;
   },
 });
-
-useSession(session);
 ```
 
 `createOrbLogin()` uses browser-direct defaults for Orb QR sign-in and Lens
