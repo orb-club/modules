@@ -9,12 +9,14 @@ bun.lock
 .env.*
 !.env.example
 !.env.sample
+.npmrc
 
 # OS files
 .DS_Store
 Thumbs.db
 
 # Editor / IDE
+.claude/settings.local.json
 .vscode/
 .idea/
 *.swp
