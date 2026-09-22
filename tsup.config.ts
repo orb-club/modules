@@ -6,6 +6,7 @@ export default defineConfig({
     "auth/index": "src/auth/index.ts",
     "auth/qr/index": "src/auth/qr/index.ts",
     "auth/lens/index": "src/auth/lens/index.ts",
+    "auth/site/index": "src/auth/site/index.ts",
     "media/index": "src/media/index.ts",
     "upload/grove/index": "src/upload/grove/index.ts",
     "transport/backend/index": "src/transport/backend/index.ts",

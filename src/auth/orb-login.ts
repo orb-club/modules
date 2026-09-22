@@ -4,16 +4,21 @@ import {
   DEFAULT_AUTH_REFRESH_URL,
   DEFAULT_AUTH_REVOKE_URL,
   DEFAULT_LENS_GRAPHQL_URL,
-  DEFAULT_ORB_QR_CREDENTIALS,
-  DEFAULT_ORB_QR_INIT_URL,
-  DEFAULT_ORB_QR_POLL_URL,
 } from "./defaults";
+import { watchSessionExpiry } from "./expiry";
 import { lensAuthPlugin } from "./lens/plugin";
 import type { LensAuthCapabilities, LensAuthPluginConfig } from "./lens/types";
 import { authPlugin } from "./plugin";
+import { prefersDeepLink } from "./qr/client";
 import { qrAuthPlugin } from "./qr/plugin";
-import type { QrAuthPluginConfig, QrConnectOptions, QrConnectResult } from "./qr/types";
+import type {
+  QrAuthPluginConfig,
+  QrConnectOptions,
+  QrConnectResult,
+  QrSignInApproval,
+} from "./qr/types";
 import type { AuthCapabilities } from "./types";
+import { AuthSessionError } from "./types";
 
 type OrbLoginSDKOptions = Omit<CreateSDKOptions, "plugins">;
 
@@ -22,14 +27,10 @@ export type OrbLoginConfig = OrbLoginSDKOptions & {
   lens?: LensAuthPluginConfig;
 };
 
-export type OrbLoginQrInit = {
-  qrCode: string;
-  deepLink?: string;
-};
+/** What `onInit` receives: display-only approval data. */
+export type OrbLoginQrInit = QrSignInApproval;
 
-export type OrbLoginQrOptions = Omit<QrConnectOptions, "onInit"> & {
-  onInit?: (payload: OrbLoginQrInit) => void | Promise<void>;
-};
+export type OrbLoginQrOptions = QrConnectOptions;
 
 export type OrbLogin = Pick<
   AuthCapabilities,
@@ -41,9 +42,20 @@ export type OrbLogin = Pick<
   | "isSessionStale"
   | "shouldRefreshSession"
 > & {
+  /** Runs browser-site Sign in with Orb in the page. Resolves with id + access tokens; never a refresh token. */
   connectWithQr: (options?: OrbLoginQrOptions) => Promise<QrConnectResult>;
-  refresh: LensAuthCapabilities["refreshLensSession"];
+  /** True on touch-first devices: show an "Open Orb app" link to `deepLink` next to the QR. */
+  prefersDeepLink: typeof prefersDeepLink;
+  /** Calls back once when the session's access token expires; returns a stop function. */
+  watchSessionExpiry: typeof watchSessionExpiry;
+  /**
+   * @deprecated Sign in with Orb issues no refresh token, so there is nothing
+   * to refresh. Always rejects with `AuthSessionError` (`AUTH_REFRESH_UNSUPPORTED`).
+   * End the session when the access token expires and prompt a new sign-in.
+   */
+  refresh: (..._args: unknown[]) => Promise<never>;
   revoke: LensAuthCapabilities["revokeLensSession"];
+  /** Returns the session while its access token is valid, otherwise `null`. */
   syncSession: LensAuthCapabilities["syncLensSession"];
   getAccountFromAccessToken: LensAuthCapabilities["getLensAccountFromAccessToken"];
 };
@@ -59,12 +71,7 @@ export function createOrbLogin(config: OrbLoginConfig = {}): OrbLogin {
         refreshUrl: DEFAULT_AUTH_REFRESH_URL,
         revokeUrl: DEFAULT_AUTH_REVOKE_URL,
       }),
-      qrAuthPlugin({
-        initUrl: DEFAULT_ORB_QR_INIT_URL,
-        pollUrl: DEFAULT_ORB_QR_POLL_URL,
-        credentials: DEFAULT_ORB_QR_CREDENTIALS,
-        ...(config.qr ?? {}),
-      }),
+      qrAuthPlugin(config.qr ?? {}),
       lensAuthPlugin({
         graphqlUrl: DEFAULT_LENS_GRAPHQL_URL,
         ...(config.lens ?? {}),
@@ -84,18 +91,24 @@ export function createOrbLogin(config: OrbLoginConfig = {}): OrbLogin {
       const { onInit, ...rest } = options ?? {};
       return sdk.auth.connectWithQr({
         ...rest,
+        // Hand the UI a fresh object holding only the display fields.
         ...(onInit
           ? {
-              onInit: (payload) =>
-                onInit({
-                  qrCode: payload.qrCode,
-                  ...(payload.deepLink ? { deepLink: payload.deepLink } : {}),
-                }),
+              onInit: ({ qrCode, deepLink, expiresAt }) => onInit({ qrCode, deepLink, expiresAt }),
             }
           : {}),
       });
     },
-    refresh: sdk.auth.refreshLensSession,
+    prefersDeepLink,
+    watchSessionExpiry,
+    refresh: () =>
+      Promise.reject(
+        new AuthSessionError(
+          "Sign in with Orb issues no refresh token. End the session when the access token expires and sign in again.",
+          "refresh",
+          "AUTH_REFRESH_UNSUPPORTED",
+        ),
+      ),
     revoke: sdk.auth.revokeLensSession,
     syncSession: sdk.auth.syncLensSession,
     getAccountFromAccessToken: sdk.auth.getLensAccountFromAccessToken,

@@ -1,6 +1,6 @@
 # @orbclub/modules
 
-Purpose: auth-first modules for browser-direct Orb login, Lens session refresh, QR auth, media parsing, Grove uploads, and optional backend transport.
+Purpose: auth-first modules for Sign in with Orb (browser-site protocol, run in the page), the site opt-in manifest, Lens session helpers, media parsing, Grove uploads, and optional backend transport.
 
 Read in this order:
 - `README.md`
@@ -12,12 +12,14 @@ Read in this order:
 - `docs/transport-backend.md`
 - `docs/errors.md`
 - `docs/release.md`
+- `CHANGELOG.md`
 - `AGENTS.md`
 
 Capability map:
 - root: `createSDK`, core errors, core types
-- `@orbclub/modules/auth`: `createOrbLogin`, `authPlugin`, token/session helpers, auth errors
-- `@orbclub/modules/auth/qr`: `qrAuthPlugin`, QR request helpers, QR errors
+- `@orbclub/modules/auth`: `createOrbLogin`, `authPlugin`, `watchSessionExpiry`, token/session helpers, auth errors
+- `@orbclub/modules/auth/site`: `createSiwoManifestHandler`, `createSiwoManifest`, `ORB_SIWO_MANIFEST_PATH`, `SiwoManifestConfigError`
+- `@orbclub/modules/auth/qr`: `qrAuthPlugin`, `connectWithQr`, `prefersDeepLink`, QR errors (legacy request/parse helpers are throwing stubs)
 - `@orbclub/modules/auth/lens`: `lensAuthPlugin`, Lens GraphQL refresh/revoke helpers
 - `@orbclub/modules/media`: `mediaPlugin`, media MIME helpers
 - `@orbclub/modules/upload/grove`: `groveUploadPlugin`, Grove upload errors
@@ -25,28 +27,43 @@ Capability map:
 
 Runtime map:
 - `auth`: browser or server
-- `auth/qr`: browser client flow with app-provided QR endpoints
+- `auth/qr`: browser only (never proxy it through a server)
+- `auth/site`: server (any Fetch-API runtime: Next.js route handlers, Hono, workers)
 - `auth/lens`: browser or server Lens GraphQL refresh flow
 - `media`: browser or server
 - `upload/grove`: browser-only
 - `transport/backend`: trusted runtime or app proxy
 
-Auth QR behavior:
-- `createOrbLogin()` is the happy path for browser-owned Orb login
-- default QR init is `https://orbapi.xyz/init-sign-in?credentials=id_access_refresh`
-- default QR poll is `https://orbapi.xyz/poll-sign-in`
-- `createOrbLogin().connectWithQr({ onInit })` exposes only `qrCode` and `deepLink`
-- `connectWithQr(...)` resolves on `processed: true` plus a non-blank `accessToken`
-- `idToken`, `refreshToken`, and `authenticationId` are optional result fields
-- `status: SUCCESS` without `processed: true` is not terminal; continue polling
-- invalid QR poll intervals fall back to the default interval
+Sign in with Orb behavior (browser-site protocol):
+- `createOrbLogin().connectWithQr({ signal, onInit, onProvisioning })` is the happy path; run it in the browser
+- init: `POST https://orbapi.xyz/init-site-sign-in {state, codeChallenge}` (PKCE S256, 43-char base64url values); the page Origin identifies the site
+- fetch options: `mode: cors`, `credentials: omit`, `cache: no-store`, `redirect: error`, `referrerPolicy: no-referrer`, 10s timeout
+- `phase: PROVISIONING` = first use of an origin; retried every 10s, max 6 attempts, then `QrProvisioningError`; setup can take a few minutes
+- `phase: READY` gives `session`, `qrCode`, `deepLink` (`orbapp://orb/approve?secret=<64 hex>`), `expiresAt`; every field is validated before `onInit`
+- `onInit` receives only `{ qrCode, deepLink, expiresAt }`; show `deepLink` as "Open Orb app" when `prefersDeepLink()` (pointer: coarse)
+- poll: `POST https://orbapi.xyz/poll-site-sign-in {session, state, codeVerifier}` every 2.5s until `expiresAt` (~5 min); network/5xx/429 retried; `FAILED` stops
+- success: `{ processed: true, source: "lens", user_id, idToken, accessToken, expiresAt }`; any `refreshToken` in the response is rejected
+- no refresh token exists; access token lives ~10 min; end the session at `expiresAt` (`watchSessionExpiry`) and re-prompt
+- `createOrbLogin().refresh()` always rejects with `AUTH_REFRESH_UNSUPPORTED`
+- failures carry `reason`: `expired`, `cancelled`, `unavailable`, `provisioning`, `invalid`, `configuration`
+- rate limits are per client IP (12 inits/min, 120 polls/min; 30 polls/min per session): never proxy sign-in through a server
+- legacy `/init-sign-in`, `/poll-sign-in`, `/exchange-sign-in-code`, `/.well-known/orb-sign-in.json` are disabled; legacy options/helpers throw `QrLegacyFlowError`
+
+Site requirements:
+- serve `GET /.well-known/orb-siwo.json` -> 200 `application/json`, body exactly `{"version":1,"origin":"https://<exact origin>"}` (< 2KB, no trailing slash)
+- `createSiwoManifestHandler({ origin })` or `({ origins })` from `@orbclub/modules/auth/site` returns a `(request?: Request) => Response` handler
+- Next.js: `export const GET = createSiwoManifestHandler({ origin })` in `app/.well-known/orb-siwo.json/route.ts`
+- Hono: `app.get(ORB_SIWO_MANIFEST_PATH, (c) => handler(c.req.raw))`, registered before any SPA fallback
+- CSP: add `https://orbapi.xyz` to `connect-src`
+- preview deployments on other origins cannot sign in; `http://localhost` cannot use this protocol
 
 Lens auth behavior:
 - default Lens GraphQL endpoint is `https://api.lens.xyz/graphql`
 - `refreshLensSession(...)` requires a non-blank `refreshToken`
 - `revokeLensSession(...)` requires a non-blank `authenticationId` and `accessToken`
 - Lens refresh success requires `AuthenticationTokens` with a non-blank `accessToken`
-- `syncLensSession(...)` returns `null` for Lens `ForbiddenError` responses and keeps the hydrated session on transient failures
+- `syncLensSession(...)` without a `refreshToken` returns the session while its access token is valid, else `null`
+- with a `refreshToken`, it returns `null` for Lens `ForbiddenError` responses and keeps the hydrated session on transient failures
 
 Media normalization:
 - resolves `ipfs://`, `ar://`, `lens://`, and embedded storage URIs through configured gateways

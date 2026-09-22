@@ -6,9 +6,10 @@ The package surface is intentionally small:
 
 - root export: `createSDK`
 - happy-path login entrypoint: `auth`
+- site manifest helper: `auth/site`
 - lower-level plugin entrypoints: `auth/qr`, `auth/lens`, `media`, `upload/grove`, `transport/backend`
 - no UI framework state in the core package
-- browser-direct Orb login by default
+- Sign in with Orb runs in the browser (browser-site protocol); no auth proxy routes
 
 ## Install
 
@@ -28,22 +29,50 @@ const orbLink = document.querySelector<HTMLAnchorElement>("#orb-link");
 const session = await orb.connectWithQr({
   onInit: ({ qrCode, deepLink }) => {
     if (qrImage) qrImage.src = qrCode;
-    if (orbLink && deepLink) orbLink.href = deepLink;
+    if (orbLink) {
+      orbLink.href = deepLink; // "Open Orb app" on phones
+      orbLink.hidden = !orb.prefersDeepLink();
+    }
   },
 });
+
+// No refresh token exists: the session ends with the ~10-minute access token.
+orb.watchSessionExpiry(session.expiresAt, () => signOut());
 ```
 
-`createOrbLogin()` uses browser-direct defaults for Orb QR sign-in and Lens
-session refresh. No app auth proxy routes are required for the default flow.
-Session persistence is an app-level security decision; the package does not read
-or write browser storage.
+Serve the opt-in manifest from your site (Next.js App Router shown; Hono and
+static hosting in [docs/auth.md](docs/auth.md#site-manifest)):
+
+```ts
+// app/.well-known/orb-siwo.json/route.ts
+import { createSiwoManifestHandler } from "@orbclub/modules/auth/site";
+
+export const GET = createSiwoManifestHandler({ origin: "https://app.example.com" });
+```
+
+Checklist:
+
+- `GET /.well-known/orb-siwo.json` answers `{"version":1,"origin":"<exact origin>"}`
+  as `application/json` (not your SPA's `index.html`).
+- CSP `connect-src` allows `https://orbapi.xyz`.
+- Sign-in runs in the browser: the backend limits each client IP to 12 inits
+  and 120 polls a minute, so a server proxy would throttle everyone together.
+- The first sign-in for a new origin can spend a few minutes provisioning.
+- Preview deployments on other origins cannot sign in.
+- The session lasts about 10 minutes and cannot be refreshed; end it at
+  `expiresAt` and prompt again.
+
+The package does not read or write browser storage. Upgrading from 0.1.x: see
+[docs/auth.md#migrating-from-01x](docs/auth.md#migrating-from-01x) and
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Plugins
 
 | Import | Purpose | Runtime |
 | --- | --- | --- |
-| `@orbclub/modules/auth` | Browser-direct Orb login plus session helpers | Browser or server |
-| `@orbclub/modules/auth/qr` | Lower-level QR auth helpers | Browser client |
+| `@orbclub/modules/auth` | Sign in with Orb (`createOrbLogin`) plus token/session expiry helpers | Browser (sign-in) or server (helpers) |
+| `@orbclub/modules/auth/site` | `/.well-known/orb-siwo.json` manifest handler (Next.js, Hono, any Fetch-API server) | Server |
+| `@orbclub/modules/auth/qr` | Lower-level browser-site sign-in plugin | Browser |
 | `@orbclub/modules/auth/lens` | Lens GraphQL refresh helpers layered onto `sdk.auth` | Browser or server |
 | `@orbclub/modules/media` | Media URL parsing and gateway-aware resolution | Browser or server |
 | `@orbclub/modules/upload/grove` | Browser-side Grove upload plugin with progress tracking | Browser only |
@@ -51,7 +80,7 @@ or write browser storage.
 
 ## Runtime Boundaries
 
-- `createOrbLogin()` uses direct Orb QR and Lens GraphQL defaults.
+- `createOrbLogin()` signs in against `https://orbapi.xyz` from the page; it must not be proxied through a server.
 - `createSDK` is available for custom plugin composition. Import only what you need.
 - The package does not read environment variables directly. Resolve config in your app and pass it into plugin factories.
 - Media parsing resolves `ipfs://`, `ar://`, `lens://`, embedded storage URIs, and existing `thumbnailDimension...` proxy URLs before optional image or audio gateway wrapping.

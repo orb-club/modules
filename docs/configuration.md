@@ -1,7 +1,7 @@
 # Configuration
 
-The default login path is `createOrbLogin()` with no config. It uses direct
-browser calls to Orb QR and Lens GraphQL.
+The default login path is `createOrbLogin()` with no config. It runs
+browser-site Sign in with Orb against `https://orbapi.xyz` from the page.
 
 The package still takes plain config objects for advanced composition. It does
 not read environment variables directly.
@@ -16,11 +16,11 @@ const orb = createOrbLogin();
 
 Defaults:
 
-- QR init: `https://orbapi.xyz/init-sign-in`
-- QR poll: `https://orbapi.xyz/poll-sign-in`
-- QR credentials: `id_access_refresh`
+- Sign-in API: `https://orbapi.xyz` (`/init-site-sign-in`, `/poll-site-sign-in`)
+- Poll interval: `2_500` ms
+- Per-request timeout: `10_000` ms
+- Provisioning retries: `6` attempts, `10_000` ms apart
 - Lens GraphQL: `https://api.lens.xyz/graphql`
-- QR poll interval: `2_000`
 
 ## Suggested App-Level Env Names
 
@@ -30,8 +30,7 @@ factories. These names are generic and map cleanly onto the current plugin set:
 
 - `AUTH_REFRESH_URL`
 - `AUTH_REVOKE_URL`
-- `QR_INIT_URL`
-- `QR_POLL_URL`
+- `APP_ORIGIN` (the https origin passed to `createSiwoManifestHandler`)
 - `LENS_GRAPHQL_URL`
 - `MEDIA_GATEWAY`
 - `AUDIO_GATEWAY`
@@ -53,14 +52,20 @@ factories. These names are generic and map cleanly onto the current plugin set:
 
 ### `qrAuthPlugin(...)`
 
-- `initUrl?: string` default `https://orbapi.xyz/init-sign-in`
-- `pollUrl?: string` default `https://orbapi.xyz/poll-sign-in`
-- `credentials?: string`
-- `headers?: Record<string, string>`
-- `pollIntervalMs?: number` positive finite milliseconds, invalid values use the default
-- `timeoutMs?: number`
-- `initTimeoutMs?: number`
-- `pollTimeoutMs?: number`
+- `baseUrl?: string` default `https://orbapi.xyz`; must be an `https` origin with no path
+- `pollIntervalMs?: number` default `2_500`; values below `2_000` are raised, invalid values use the default
+- `requestTimeoutMs?: number` default `10_000`
+- `provisioningRetryMs?: number` default `10_000`
+- `provisioningAttempts?: number` default `6`
+
+The 0.1.x options `initUrl`, `pollUrl`, `credentials`, `headers`, `timeoutMs`,
+`initTimeoutMs`, `pollTimeoutMs`, `parseInitResponse` and `parsePollResponse`
+are removed; passing any of them fails with `QrLegacyFlowError`.
+
+### `createSiwoManifestHandler(...)` (`@orbclub/modules/auth/site`)
+
+- `{ origin: string }`: the one https origin to serve, or
+- `{ origins: string[] }`: an allow-list; the request `Host` picks the match
 
 ### `lensAuthPlugin(...)`
 
@@ -102,10 +107,7 @@ const sdk = createSDK({
       refreshUrl: "/api/auth/refresh",
       revokeUrl: "/api/auth/revoke",
     }),
-    qrAuthPlugin({
-      initUrl: "/api/auth/qr/init",
-      pollUrl: "/api/auth/qr/poll",
-    }),
+    qrAuthPlugin(),
     mediaPlugin({
       imageGateway: "https://cdn.example.com",
     }),

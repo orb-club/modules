@@ -4,7 +4,7 @@ import {
   createQrPollRequest,
   parseQrInitResponse,
   parseQrPollResponse,
-} from "./server";
+} from "./legacy";
 import type { QrAuthPlugin, QrAuthPluginConfig } from "./types";
 
 export function qrAuthPlugin(config: QrAuthPluginConfig = {}): QrAuthPlugin {
@@ -17,8 +17,8 @@ export function qrAuthPlugin(config: QrAuthPluginConfig = {}): QrAuthPlugin {
       connectWithQr: (options) => connectWithQr(context, config, options),
       createQrInitRequest,
       createQrPollRequest,
-      parseQrInitResponse: config.parseInitResponse ?? parseQrInitResponse,
-      parseQrPollResponse: config.parsePollResponse ?? parseQrPollResponse,
+      parseQrInitResponse,
+      parseQrPollResponse,
     }),
   };
 }

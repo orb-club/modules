@@ -249,12 +249,14 @@ export async function syncLensSession(
   const hydrated = withDerivedAccount(session);
   const refreshWindowSeconds = options?.refreshWindowSeconds ?? 60;
 
-  if (hydrated.accessToken && !shouldRefreshSession(hydrated, refreshWindowSeconds)) {
-    return hydrated;
-  }
-
+  // Without a refresh token (Sign in with Orb never issues one) the session
+  // lasts exactly as long as its access token.
   if (!hydrated.refreshToken) {
     return hydrated.accessToken && !isTokenExpired(hydrated.accessToken) ? hydrated : null;
+  }
+
+  if (hydrated.accessToken && !shouldRefreshSession(hydrated, refreshWindowSeconds)) {
+    return hydrated;
   }
 
   try {
