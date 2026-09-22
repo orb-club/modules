@@ -1,94 +1,57 @@
 import { describe, expect, test, vi } from "vitest";
 
 import { createOrbLogin } from "../../src/auth";
+import { ADDRESS, approved, jwt, ready } from "./fixtures";
 
 describe("createOrbLogin", () => {
-  test("connects with browser-direct Orb QR defaults", async () => {
+  test("connects with browser-site Sign in with Orb and hands onInit only display fields", async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
-      .mockResolvedValueOnce(
-        Response.json({
-          data: {
-            qrCode: "qr-code",
-            secret: "secret-123",
-            deepLink: "orbapp://orb/sign-in",
-          },
-        }),
-      )
-      .mockResolvedValueOnce(
-        Response.json({
-          status: "SUCCESS",
-          data: {
-            processed: true,
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-          },
-        }),
-      );
+      .mockResolvedValueOnce(ready())
+      .mockResolvedValueOnce(approved());
 
     const orb = createOrbLogin({ fetch });
     const onInit = vi.fn();
 
-    await expect(orb.connectWithQr({ onInit })).resolves.toEqual(
-      expect.objectContaining({
-        processed: true,
-        accessToken: "access-token",
-        refreshToken: "refresh-token",
-      }),
-    );
-
-    expect(fetch).toHaveBeenNthCalledWith(
-      1,
-      "https://orbapi.xyz/init-sign-in?credentials=id_access_refresh",
-      expect.objectContaining({ method: "GET" }),
-    );
-    expect(fetch).toHaveBeenNthCalledWith(
-      2,
-      "https://orbapi.xyz/poll-sign-in",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ secret: "secret-123" }),
-      }),
-    );
-    expect(onInit).toHaveBeenCalledWith({
-      qrCode: "qr-code",
-      deepLink: "orbapp://orb/sign-in",
+    await expect(orb.connectWithQr({ onInit })).resolves.toMatchObject({
+      processed: true,
+      source: "lens",
+      user_id: ADDRESS,
+      expiresAt: 4_102_444_800_000,
     });
+
+    expect(fetch.mock.calls[0]?.[0]).toBe("https://orbapi.xyz/init-site-sign-in");
+    expect(fetch.mock.calls[1]?.[0]).toBe("https://orbapi.xyz/poll-site-sign-in");
+    expect(Object.keys(onInit.mock.calls[0]?.[0] ?? {}).sort()).toEqual([
+      "deepLink",
+      "expiresAt",
+      "qrCode",
+    ]);
   });
 
-  test("refreshes directly through Lens GraphQL by default", async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>(async (_input, init) => {
-      const body = JSON.parse(String(init?.body)) as {
-        query: string;
-        variables: { request: { refreshToken: string } };
-      };
-
-      expect(_input).toBe("https://api.lens.xyz/graphql");
-      expect(init?.method).toBe("POST");
-      expect(body.query).toContain("mutation Refresh");
-      expect(body.variables).toEqual({
-        request: {
-          refreshToken: "refresh-token",
-        },
-      });
-
-      return Response.json({
-        data: {
-          refresh: {
-            __typename: "AuthenticationTokens",
-            accessToken: "new-access-token",
-            refreshToken: "new-refresh-token",
-          },
-        },
-      });
-    });
-
+  test("refresh is gone: the protocol issues no refresh token", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>();
     const orb = createOrbLogin({ fetch });
 
-    await expect(orb.refresh({ refreshToken: "refresh-token" })).resolves.toEqual({
-      accessToken: "new-access-token",
-      refreshToken: "new-refresh-token",
+    await expect(orb.refresh({ refreshToken: "refresh-token" })).rejects.toMatchObject({
+      name: "AuthSessionError",
+      code: "AUTH_REFRESH_UNSUPPORTED",
     });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test("syncSession keeps a live session and drops an expired one without refreshing", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>();
+    const orb = createOrbLogin({ fetch });
+    const live = jwt({ sub: ADDRESS, exp: Math.floor(Date.now() / 1000) + 600 });
+    const dead = jwt({ sub: ADDRESS, exp: Math.floor(Date.now() / 1000) - 1 });
+
+    await expect(orb.syncSession({ accessToken: live })).resolves.toMatchObject({
+      accessToken: live,
+      account: ADDRESS,
+    });
+    await expect(orb.syncSession({ accessToken: dead })).resolves.toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test("revokes directly through Lens GraphQL by default", async () => {

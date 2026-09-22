@@ -1,3 +1,4 @@
+export { watchSessionExpiry } from "./expiry";
 export {
   createOrbLogin,
   type OrbLogin,

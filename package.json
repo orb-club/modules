@@ -1,6 +1,6 @@
 {
   "name": "@orbclub/modules",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Auth-first plugin SDK for apps built on Orb and Lens primitives.",
   "license": "MIT",
   "type": "module",
@@ -31,6 +31,7 @@
     "dist",
     "README.md",
     "LICENSE",
+    "CHANGELOG.md",
     "llms.txt",
     "docs/getting-started.md",
     "docs/auth.md",
@@ -69,6 +70,11 @@
       "types": "./dist/auth/lens/index.d.ts",
       "import": "./dist/auth/lens/index.js",
       "require": "./dist/auth/lens/index.cjs"
+    },
+    "./auth/site": {
+      "types": "./dist/auth/site/index.d.ts",
+      "import": "./dist/auth/site/index.js",
+      "require": "./dist/auth/site/index.cjs"
     },
     "./media": {
       "types": "./dist/media/index.d.ts",

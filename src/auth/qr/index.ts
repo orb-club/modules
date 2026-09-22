@@ -1,16 +1,12 @@
-export { connectWithQr } from "./client";
-export { qrAuthPlugin } from "./plugin";
+export { connectWithQr, prefersDeepLink } from "./client";
 export {
   createQrInitRequest,
   createQrPollRequest,
   parseQrInitResponse,
   parseQrPollResponse,
-} from "./server";
+} from "./legacy";
+export { qrAuthPlugin } from "./plugin";
 export {
-  type CreateQrInitRequestOptions,
-  type CreateQrPollRequestOptions,
-  type ParsedQrInitResponse,
-  type ParsedQrPollResponse,
   type QrAuthCapabilities,
   QrAuthError,
   type QrAuthPlugin,
@@ -18,8 +14,12 @@ export {
   QrCancelledError,
   type QrConnectOptions,
   type QrConnectResult,
-  type QrRequestDescriptor,
+  type QrFailureReason,
+  QrLegacyFlowError,
+  type QrLegacyHelper,
+  QrProvisioningError,
   QrRequestError,
   QrResponseError,
+  type QrSignInApproval,
   QrTimeoutError,
 } from "./types";

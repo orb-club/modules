@@ -18,11 +18,20 @@ From `@orbclub/modules/auth`:
 
 From `@orbclub/modules/auth/qr`:
 
-- `QrAuthError`
-- `QrRequestError`
-- `QrResponseError`
-- `QrTimeoutError`
-- `QrCancelledError`
+- `QrAuthError` (base; `reason` is `expired`, `cancelled`, `unavailable`, `provisioning`, `invalid` or `configuration`)
+- `QrRequestError` (`unavailable`: backend answered `FAILED`/4xx; on init usually a missing or wrong manifest)
+- `QrResponseError` (`invalid`: response outside the protocol)
+- `QrTimeoutError` (`expired`: the approval window passed)
+- `QrCancelledError` (`cancelled`)
+- `QrProvisioningError` (`provisioning`: first-use setup still running)
+- `QrLegacyFlowError` (`configuration`: a removed 0.1.x option or helper was used)
+
+`createOrbLogin().refresh()` rejects with `AuthSessionError` code
+`AUTH_REFRESH_UNSUPPORTED`: Sign in with Orb issues no refresh token.
+
+From `@orbclub/modules/auth/site`:
+
+- `SiwoManifestConfigError` (thrown when a manifest handler is created with an invalid origin)
 
 ## Upload
 
