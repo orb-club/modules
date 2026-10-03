@@ -11,13 +11,13 @@
 - `src/transport/backend/`: optional backend transport plugin.
 - `tests/`: Vitest runtime tests and `tests/types/` compile-time surface tests.
 - `docs/`: public docs and agent-facing reference pages.
-- `docs/superpowers/`: internal specs and plans that drive implementation.
+- `docs/superpowers/`: one internal design spec. Use the code when the spec and the code disagree.
 
 ## Public API Rules
 
 - Root exports stay small: `createSDK`, core errors, and core types.
 - Feature plugins are imported from subpaths. Do not re-export plugins from the package root.
-- Keep the public surface generic. Do not add Orb-specific names, hardcoded service URLs, or app-specific route contracts.
+- The sign-in API is Orb-specific. Keep its names, default URLs, and `/.well-known/orb-siwo.json`.
 - Keep the core framework-agnostic. UI state and framework adapters belong outside the v1 core package surface.
 - Every plugin owns one namespace on the SDK instance. Avoid cross-plugin helper exports that bypass `createSDK`.
 
